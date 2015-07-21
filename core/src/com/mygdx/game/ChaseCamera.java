@@ -1,11 +1,9 @@
 package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
-import com.badlogic.gdx.math.Quaternion;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
 
@@ -76,6 +74,8 @@ public class ChaseCamera extends PerspectiveCamera
 	
 	public Vector3 tmp = new Vector3();
 	
+	private int scale = 1;
+	
 	public ChaseCamera() 
 	{
 		super();
@@ -100,12 +100,11 @@ public class ChaseCamera extends PerspectiveCamera
 			
 			transform.getTranslation(direction);
 
-			desiredLocation.set(0f, 0f, -5f);
-			desiredOffset.set(0f, 1f, 0f);
-			
-			// These are definitely correct
+			desiredLocation.set(0f, 0f, -75f * scale);
+			desiredOffset.set(0f, scale > 1 ? 7f : 1f, 0f);
+
 			targetLocation.set(0f, 0f, 5f);
-			targetOffset.set(0f,1f,0f);
+			targetOffset.set(0f, 1f, 0f);
 			
 			direction.y += 1f;
 			
@@ -173,5 +172,10 @@ public class ChaseCamera extends PerspectiveCamera
 	public void update(final float delta) 
 	{
 		update(delta, true);
+	}
+	
+	public void setScale(int newScale)
+	{
+		scale = newScale;
 	}
 }

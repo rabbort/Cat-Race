@@ -30,10 +30,17 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.Bullet;
+import com.badlogic.gdx.physics.bullet.collision.btAxisSweep3;
+import com.badlogic.gdx.physics.bullet.collision.btCollisionDispatcher;
+import com.badlogic.gdx.physics.bullet.collision.btDefaultCollisionConfiguration;
+import com.badlogic.gdx.physics.bullet.collision.btGhostPairCallback;
+import com.badlogic.gdx.physics.bullet.dynamics.btDiscreteDynamicsWorld;
+import com.badlogic.gdx.physics.bullet.dynamics.btSequentialImpulseConstraintSolver;
 import com.badlogic.gdx.physics.bullet.linearmath.LinearMath;
 import com.badlogic.gdx.physics.bullet.linearmath.btIDebugDraw.DebugDrawModes;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
+import com.mygdx.game.Vehicles.Vehicle;
 
 /** @author xoppa */
 public class BaseBulletTest extends BulletTest 
@@ -77,11 +84,23 @@ public class BaseBulletTest extends BulletTest
 	private boolean android;
 	private Vector3 playerPosition = new Vector3();
 	
+	public Vehicle vehicle;
+	private Player player;
+	
 	protected final static Vector3 tmpV1 = new Vector3(), tmpV2 = new Vector3();
 
 	public BulletWorld createWorld () 
 	{
-		return new BulletWorld();
+		// We create the world using an axis sweep broadphase for this test
+		btDefaultCollisionConfiguration collisionConfiguration = new btDefaultCollisionConfiguration();
+		btCollisionDispatcher dispatcher = new btCollisionDispatcher(collisionConfiguration);
+		btAxisSweep3 sweep = new btAxisSweep3(new Vector3(-1000, -1000, -1000), new Vector3(1000, 1000, 1000));
+		btSequentialImpulseConstraintSolver solver = new btSequentialImpulseConstraintSolver();
+		btDiscreteDynamicsWorld collisionWorld = new btDiscreteDynamicsWorld(dispatcher, sweep, solver, collisionConfiguration);
+		btGhostPairCallback ghostPairCallback = new btGhostPairCallback();
+		disposables.add(ghostPairCallback);
+		sweep.getOverlappingPairCache().setInternalGhostPairCallback(ghostPairCallback);
+		return new BulletWorld(collisionConfiguration, dispatcher, sweep, solver, collisionWorld);
 	}
 	
 	public boolean isAndroid(){
@@ -110,7 +129,7 @@ public class BaseBulletTest extends BulletTest
 		}
 
 		environment = new Environment();
-		environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.3f, 0.3f, 0.3f, 1.f));
+		environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1.f));
 		light = shadows ? new DirectionalShadowLight(1024, 1024, 20f, 20f, 1f, 300f) : new DirectionalLight();
 		light.set(0.8f, 0.8f, 0.8f, -0.5f, -1f, -0.5f);
 		environment.add(light);
@@ -135,6 +154,10 @@ public class BaseBulletTest extends BulletTest
 
 		terrainManager = new TerrainManager(playerPosition, this);
 		sky = new SkyDome(this);
+		
+		vehicle = new Vehicle(this, new Vector3(0,20,0));
+		
+		player = new Player(this);
 	}
 
 	@Override
@@ -159,6 +182,7 @@ public class BaseBulletTest extends BulletTest
 
 		super.dispose();
 		controller.dispose();
+		player.dispose();
 	}
 
 	@Override
@@ -198,6 +222,8 @@ public class BaseBulletTest extends BulletTest
 		
 		character.getTranslation(playerPosition);
 		terrainManager.update(playerPosition);
+		vehicle.update();
+		player.update();
 		
 		camera.transform.set(character);
 		camera.update();

@@ -16,14 +16,16 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.VertexAttribute;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix3;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btBvhTriangleMeshShape;
 import com.badlogic.gdx.physics.bullet.collision.btTriangleIndexVertexArray;
+
 import NoiseGeneration.NoiseGenerator;
 
-public class Terrain //extends TerrainManager
+public class Terrain
 {
 	private TerrainChunk chunk;
 	private Mesh mesh;
@@ -46,6 +48,7 @@ public class Terrain //extends TerrainManager
 	
 	private BaseBulletTest base;
 	private static double[][] simplex;
+	private static int terrainScale = 20;
 	
 	private BulletEntity terrain;
 	
@@ -130,9 +133,7 @@ public class Terrain //extends TerrainManager
 	
 	    shader = new ShaderProgram(vertexShader, fragmentShader);
 	    
-	    TextureAttribute ta = new TextureAttribute(TextureAttribute.Diffuse, terrainTexture);
-	    VertexAttribute a = new VertexAttribute(Usage.Position, 3, "a_position");
-	    material = new Material(TextureAttribute.createDiffuse(terrainTexture), ColorAttribute.createSpecular(1,1,1,1), FloatAttribute.createShininess(8f));//new Material(ta);
+	    material = new Material(ColorAttribute.createSpecular(1,1,1,1), FloatAttribute.createShininess(8f));
 	    
 	    terrainModel = new Model();
 	    
@@ -171,63 +172,26 @@ public class Terrain //extends TerrainManager
 	    
 	    switch(this.location)
 	    {
-	    	case "NW2": terrain = this.base.world.add("terrain"+this.location, this.center.x - 256, 0, this.center.z + 256);
+	    	case "NW": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 128 * terrainScale, 0, this.center.z + 128 * terrainScale);
+						break;
+	    	case "N": 	terrain = this.base.world.add("terrain"+this.location, this.center.x, 0, this.center.z + 128 * terrainScale);
+						break;
+	    	case "NE": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 128 * terrainScale, 0, this.center.z + 128 * terrainScale);
 	    				break;
-	    	case "NL": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 128, 0, this.center.z + 256);
-						break;
-	    	case "NM": 	terrain = this.base.world.add("terrain"+this.location, this.center.x, 0, this.center.z + 256);
-						break;
-	    	case "NR": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 128, 0, this.center.z + 256);
-						break;
-	    	case "NE2": terrain = this.base.world.add("terrain"+this.location, this.center.x + 256, 0, this.center.z + 256);
-						break;
-	    	case "WT": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 256, 0, this.center.z + 128);
-						break;
-	    	case "NW": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 128, 0, this.center.z + 128);
-						break;
-	    	case "N": 	terrain = this.base.world.add("terrain"+this.location, this.center.x, 0, this.center.z + 128);
-						break;
-	    	case "NE": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 128, 0, this.center.z + 128);
-	    				break;
-	    	case "ET": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 256, 0, this.center.z + 128);
-						break;
-	    	case "WM": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 256, 0, this.center.z);
-						break;
-	    	case "W": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 128, 0, this.center.z);
+	    	case "W": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 128 * terrainScale, 0, this.center.z);
 						break;
 	    	case "C": 	terrain = this.base.world.add("terrain"+this.location, this.center.x, 0, this.center.z);
 	    				break;
-	    	case "E": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 128, 0, this.center.z);
+	    	case "E": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 128 * terrainScale, 0, this.center.z);
 						break;
-	    	case "EM": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 256, 0, this.center.z);
+	    	case "SW": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 128 * terrainScale, 0, this.center.z - 128 * terrainScale);
 						break;
-	    	case "WB": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 256, 0, this.center.z - 128);
+	    	case "S": 	terrain = this.base.world.add("terrain"+this.location, this.center.x, 0, this.center.z - 128 * terrainScale);
 						break;
-	    	case "SW": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 128, 0, this.center.z - 128);
-						break;
-	    	case "S": 	terrain = this.base.world.add("terrain"+this.location, this.center.x, 0, this.center.z - 128);
-						break;
-	    	case "SE": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 128, 0, this.center.z - 128);
-						break;
-	    	case "EB": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 256, 0, this.center.z - 128);
-						break;
-	    	case "SW2": terrain = this.base.world.add("terrain"+this.location, this.center.x - 256, 0, this.center.z - 256);
-						break;
-	    	case "SL": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 128, 0, this.center.z - 256);
-						break;
-	    	case "SM": 	terrain = this.base.world.add("terrain"+this.location, this.center.x, 0, this.center.z - 256);
-						break;
-	    	case "SR": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 128, 0, this.center.z - 256);
-						break;
-	    	case "SE2": terrain = this.base.world.add("terrain"+this.location, this.center.x + 256, 0, this.center.z - 256);
+	    	case "SE": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 128 * terrainScale, 0, this.center.z - 128 * terrainScale);
 						break;
 	    }
-	    //terrain.modelInstance.userData = shader;
-	    //terrain.modelInstance.materials.get(0).
-	    shader.begin();
-	    terrainTexture.bind();
-	    //terrain.modelInstance.model.meshes.get(0).bind(shader);
-	    shader.end();
+
 	    this.base.disposables.add(terrain);
 	}
 	
@@ -240,7 +204,6 @@ public class Terrain //extends TerrainManager
 	public void render() 
 	
 	{	
-
 		terrainTexture.bind();
 	    shader.begin();
 	    Matrix4 model = new Matrix4();
@@ -300,7 +263,7 @@ public class Terrain //extends TerrainManager
 	
 	        calcNormals(indices, vertices);
 	    }
-	
+
 	    public void buildHeightmap() 
 	    {
 	        int idh = 0;
@@ -311,24 +274,6 @@ public class Terrain //extends TerrainManager
 	        
 	        switch(this.location)
 	        {
-	        	case "NW2": xOffset = (int)this.center.x - 64 - (128 * 2);
-	        				yOffset = (int)this.center.z + 64 + (128 * 2);
-	        				break;
-	        	case "NL": 	xOffset = (int)this.center.x - 64 - (128 * 1);
-							yOffset = (int)this.center.z + 64 + (128 * 2);
-							break;
-	        	case "NM": 	xOffset = (int)this.center.x - 64 - (128 * 0);
-							yOffset = (int)this.center.z + 64 + (128 * 2);
-							break;
-	        	case "NR": 	xOffset = (int)this.center.x + 64 + (128 * 0);
-							yOffset = (int)this.center.z + 64 + (128 * 2);
-							break;
-	        	case "NE2": xOffset = (int)this.center.x + 64 + (128 * 1);
-							yOffset = (int)this.center.z + 64 + (128 * 2);
-							break;
-	        	case "WT": 	xOffset = (int)this.center.x - 64 - (128 * 2);
-							yOffset = (int)this.center.z + 64 + (128 * 1);
-							break;
 	        	case "NW": 	xOffset = (int)this.center.x - 64 - (128 * 1);
 							yOffset = (int)this.center.z + 64 + (128 * 1);
 							break;
@@ -337,12 +282,6 @@ public class Terrain //extends TerrainManager
 							break;
 	        	case "NE": 	xOffset = (int)this.center.x + 64 + (128 * 0);
 							yOffset = (int)this.center.z + 64 + (128 * 1);
-							break;
-	        	case "ET": 	xOffset = (int)this.center.x + 64 + (128 * 1);
-							yOffset = (int)this.center.z + 64 + (128 * 1);
-							break;
-	        	case "WM": 	xOffset = (int)this.center.x - 64 - (128 * 2);
-							yOffset = (int)this.center.z + 64 + (128 * 0);
 							break;
 	        	case "W": 	xOffset = (int)this.center.x - 64 - (128 * 1);
 							yOffset = (int)this.center.z + 64 + (128 * 0);
@@ -353,12 +292,6 @@ public class Terrain //extends TerrainManager
 	        	case "E": 	xOffset = (int)this.center.x + 64 + (128 * 0);
 							yOffset = (int)this.center.z + 64 + (128 * 0);
 							break;
-	        	case "EM": 	xOffset = (int)this.center.x + 64 + (128 * 1);
-							yOffset = (int)this.center.z + 64 + (128 * 0);
-							break;
-	        	case "WB": 	xOffset = (int)this.center.x - 64 - (128 * 2);
-							yOffset = (int)this.center.z - 64 - (128 * 0);
-							break;
 	        	case "SW": 	xOffset = (int)this.center.x - 64 - (128 * 1);
 							yOffset = (int)this.center.z - 64 - (128 * 0);
 							break;
@@ -367,24 +300,6 @@ public class Terrain //extends TerrainManager
 							break;
 	        	case "SE": 	xOffset = (int)this.center.x + 64 + (128 * 0);
 							yOffset = (int)this.center.z - 64 - (128 * 0);
-							break;
-	        	case "EB": 	xOffset = (int)this.center.x + 64 + (128 * 1);
-							yOffset = (int)this.center.z - 64 - (128 * 0);
-							break;
-	        	case "SW2": xOffset = (int)this.center.x - 64 - (128 * 2);
-							yOffset = (int)this.center.z - 64 - (128 * 1);
-							break;
-	        	case "SL": 	xOffset = (int)this.center.x - 64 - (128 * 1);
-							yOffset = (int)this.center.z - 64 - (128 * 1);
-							break;
-	        	case "SM": 	xOffset = (int)this.center.x - 64 - (128 * 0);
-							yOffset = (int)this.center.z - 64 - (128 * 1);
-							break;
-	        	case "SR": 	xOffset = (int)this.center.x + 64 + (128 * 0);
-							yOffset = (int)this.center.z - 64 - (128 * 1);
-							break;
-	        	case "SE2": xOffset = (int)this.center.x + 64 + (128 * 1);
-							yOffset = (int)this.center.z - 64 - (128 * 1);
 							break;
 	        }
 	        
@@ -398,7 +313,7 @@ public class Terrain //extends TerrainManager
 	            }
 	        }
 	    }
-	
+
 	    public void buildVertices() 
 	    {
 	        int heightPitch = height + 1;
@@ -408,7 +323,7 @@ public class Terrain //extends TerrainManager
 	        int hIdx = 0;
 	        int strength = 10; // multiplier for height map
 	
-	        float scale = 2f;
+	        float scale = terrainScale;
 	
 	        for (int z = 0; z < heightPitch; z++) 
 	        {
@@ -416,21 +331,36 @@ public class Terrain //extends TerrainManager
 	            {
 	                // POSITION
 	                vertices[idx++] = scale * z;
+	                
+	                // Exaggerate high values to create larger mountains
+	                /*if(heightMap[hIdx] > 2.7)
+	                	heightMap[hIdx] *= 5;
+	                else if(heightMap[hIdx] > 2.4)
+	                	heightMap[hIdx] *= 4.5;
+	                else if(heightMap[hIdx] > 2.0)
+	                	heightMap[hIdx] *= 3.3;
+	                else*/
+	                	heightMap[hIdx] = 0;//MathUtils.random(0f, 0.2f);
+
 	                vertices[idx++] = heightMap[hIdx++] * strength;
 	                vertices[idx++] = scale * x;
-	                
-	                // Get two vectors from the vertex positions to use for normals
-	                Vector3 edge1 = new Vector3(-vertices[idx - 3], vertices[idx - 2], 0).nor();
-	                Vector3 edge2 = new Vector3(-vertices[idx - 3], 0, vertices[idx - 1]).nor();
 	
 	                // NORMAL
-	                //vertices[idx++] = edge1.y * edge2.z - edge2.y * edge1.z;
-	                //vertices[idx++] = edge1.z * edge2.x - edge2.z * edge1.x;
-	                //vertices[idx++] = edge1.x * edge2.y - edge2.x * edge1.y;
 	                idx += 3;
 	
 	                // COLOR
-	                vertices[idx++] = Color.WHITE.toFloatBits();
+	                if(vertices[idx - 5] > 100)
+	                	vertices[idx++] = Color.WHITE.toFloatBits();
+	                else if(vertices[idx - 5] > 20)
+	                {
+	                	int grey = MathUtils.random(100, 200);
+	                	vertices[idx++] = Color.toFloatBits(grey, grey, grey, 1);
+	                }
+	                else if(vertices[idx - 5] > 15)
+	                	vertices[idx++] = Color.toFloatBits(MathUtils.random(100, 120), MathUtils.random(60, 80), 
+	                			MathUtils.random(20, 30), 1);
+	                else //if(vertices[idx - 2])
+	                	vertices[idx++] = Color.toFloatBits(0, MathUtils.random(50, 90), 0, 1);//GREEN.toFloatBits();
 	
 	                // TEXTURE
 	                vertices[idx++] = (x / (float) width * scale);
@@ -438,7 +368,7 @@ public class Terrain //extends TerrainManager
 	            }
 	        }
 	    }
-	
+
 	    private void buildIndices() 
 	    {
 	        int idx = 0;
@@ -579,6 +509,3 @@ public class Terrain //extends TerrainManager
 	    }
 	}
 }
-
-
-

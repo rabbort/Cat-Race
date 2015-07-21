@@ -24,7 +24,7 @@ public class SkyDome extends EnvironmentEntity
 	// Used to move the sky to stay centered on the player
 	public void moveSky(Vector3 newPosition)
 	{
-		newPosition.y -= 120f;
+		newPosition.y -= 300f;
 		sky.modelInstance.transform.setToTranslation(newPosition);
 	}
 }

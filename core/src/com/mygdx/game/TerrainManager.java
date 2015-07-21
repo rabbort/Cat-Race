@@ -1,16 +1,16 @@
 package com.mygdx.game;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.math.Vector3;
 
 public class TerrainManager extends BaseBulletTest
 {	
 	private static final String[] chunkLocation = 
 		{ 	
-			"NW2", "NL", "NM", "NR", "NE2",
-			"WT", "NW", "N", "NE", "ET",
-			"WM", "W", "C", "E", "EM",
-			"WB", "SW", "S", "SE", "EB",
-			"SW2", "SL", "SM", "SR", "SE2" 
+			"NW", "N", "NE",
+			"W", "C", "E",
+			"SW", "S", "SE"
 		};
 	
 	private int xOffsetNegative;
@@ -33,92 +33,81 @@ public class TerrainManager extends BaseBulletTest
 		this.center.x = (int)this.center.x;
 		this.center.z = (int)this.center.z;
 		
-		terrainChunks = new Terrain[25];
+		terrainChunks = new Terrain[9];
 		
 		// Create each terrain chunk based on the starting position
-		/*for(int i = 0; i < 25; i++)
+		for(int i = 0; i < terrainChunks.length; i++)
 		{
 			terrainChunks[i] = new Terrain(this.base, chunkLocation[i], position);
-		}*/
-		terrainChunks[0] = new Terrain(this.base, chunkLocation[12], new Vector3(-256,0,0));
+		}
 		
-		xOffsetNegative = (int)position.x - 64;
-		xOffsetPositive = (int)position.x + 64;
-		zOffsetNegative = (int)position.z - 64;
-		zOffsetPositive = (int)position.z + 64;
+		xOffsetNegative = (int)position.x - 1280;
+		xOffsetPositive = (int)position.x + 1280;
+		zOffsetNegative = (int)position.z - 1280;
+		zOffsetPositive = (int)position.z + 1280;
 	}
 	
 	public void update(Vector3 playerPosition)
 	{
+		System.out.println(playerPosition);
 		//for(int i = 0; i < 25; i++)
 			//terrainChunks[i].render();
-		terrainChunks[0].render();
+		//terrainChunks[0].render();
+		if(Gdx.input.isKeyJustPressed(Keys.G))
+			new Terrain(this.base,chunkLocation[5], this.center);
 		
 		// Shift terrain chunks over one space, create new ones in the empty spots
 		if(playerPosition.x > xOffsetPositive)
 		{
 			// update the center
-			this.center.x += 128;
+			this.center.x += 2560;
 
-			new Terrain(this.base, chunkLocation[4], this.center);
-			new Terrain(this.base, chunkLocation[9], this.center);
-			new Terrain(this.base, chunkLocation[14], this.center);
-			new Terrain(this.base, chunkLocation[19], this.center);
-			new Terrain(this.base, chunkLocation[24], this.center);
+			new Terrain(this.base, chunkLocation[2], this.center);
+			new Terrain(this.base, chunkLocation[5], this.center);
+			new Terrain(this.base, chunkLocation[8], this.center);
 			
-			xOffsetPositive += 128;
-			xOffsetNegative += 128;
+			xOffsetPositive += 2560;
+			xOffsetNegative += 2560;
 			System.out.println("positive x "+this.center);
 		}
 		else if(playerPosition.x < xOffsetNegative)
 		{
 			//update the center
-			this.center.x -= 128;
+			this.center.x -= 1280;
 			
 			new Terrain(this.base, chunkLocation[0], this.center);
-			new Terrain(this.base, chunkLocation[5], this.center);
-			new Terrain(this.base, chunkLocation[10], this.center);
-			new Terrain(this.base, chunkLocation[15], this.center);
-			new Terrain(this.base, chunkLocation[20], this.center);
-			
-			xOffsetPositive -= 128;
-			xOffsetNegative -= 128;
+			new Terrain(this.base, chunkLocation[3], this.center);
+			new Terrain(this.base, chunkLocation[6], this.center);
+
+			xOffsetPositive -= 1280;
+			xOffsetNegative -= 1280;
 			System.out.println("neg x "+this.center);
 		}
 		
 		if(playerPosition.z > zOffsetPositive)
 		{
 			//update the center
-			this.center.z += 128;
+			this.center.z += 2560;
 
 			new Terrain(this.base, chunkLocation[0], this.center);
 			new Terrain(this.base, chunkLocation[1], this.center);
 			new Terrain(this.base, chunkLocation[2], this.center);
-			new Terrain(this.base, chunkLocation[3], this.center);
-			new Terrain(this.base, chunkLocation[4], this.center);
 			
-			zOffsetPositive += 128;
-			zOffsetNegative += 128;
+			zOffsetPositive += 2560;
+			zOffsetNegative += 2560;
 			System.out.println("pos z "+this.center);
 		}
 		else if(playerPosition.z < zOffsetNegative)
 		{
 			//update the center
-			this.center.z -= 128;
-			
-			for(int i = 0; i < terrainChunks.length - 5; i++)
-			{
-				terrainChunks[i] = terrainChunks[i + 5];
-			}
+			this.center.z -= 1280;
 
-			terrainChunks[20] = new Terrain(this.base, chunkLocation[20], this.center);
-			terrainChunks[21] = new Terrain(this.base, chunkLocation[21], this.center);
-			terrainChunks[22] = new Terrain(this.base, chunkLocation[22], this.center);
-			terrainChunks[23] = new Terrain(this.base, chunkLocation[23], this.center);
-			terrainChunks[24] = new Terrain(this.base, chunkLocation[24], this.center);
+			new Terrain(this.base, chunkLocation[6], this.center);
+			new Terrain(this.base, chunkLocation[7], this.center);
+			new Terrain(this.base, chunkLocation[8], this.center);
 			
-			zOffsetPositive -= 128;
-			zOffsetNegative -= 128;
+			zOffsetPositive -= 1280;
+			zOffsetNegative -= 1280;
 			System.out.println("neg z "+this.center);
 		}
 	}

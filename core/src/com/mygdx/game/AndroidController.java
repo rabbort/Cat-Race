@@ -2,24 +2,21 @@ package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
-import com.badlogic.gdx.scenes.scene2d.ui.Button.ButtonStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Touchpad;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Touchpad.TouchpadStyle;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener.ChangeEvent;
 
-public class AndroidController extends CharacterTest
+public class AndroidController //extends Player
 {
 	Stage stage;
 	Touchpad move;
@@ -33,11 +30,10 @@ public class AndroidController extends CharacterTest
 	int backgroundWidth;
 	int padding;
 	
-	Button flyToggle;
-	TextButtonStyle flyToggleStyle;
-	private boolean flying;
+	Button enterVehicle;
+	TextButtonStyle enterVehicleStyle;
 	
-	@Override
+	//@Override
 	public void dispose()
 	{
 		stage.dispose();
@@ -46,9 +42,7 @@ public class AndroidController extends CharacterTest
 	//@Override
 	//public void create() {
 	public AndroidController()
-	{
-		flying = false;
-		
+	{	
 		stage = new Stage();
 		backgroundWidth = Gdx.graphics.getWidth() / 8;
 		knobWidth = backgroundWidth / 3;
@@ -74,34 +68,33 @@ public class AndroidController extends CharacterTest
 		turn.setBounds(Gdx.graphics.getWidth() - (padding + backgroundWidth),
 				padding, backgroundWidth, backgroundWidth);	
 		
-		flyToggleStyle = new TextButtonStyle();
-		flyToggleStyle.font = new BitmapFont();
-		flyToggleStyle.fontColor = Color.RED;
-		flyToggleStyle.checkedFontColor = Color.GREEN;
+		enterVehicleStyle = new TextButtonStyle();
+		enterVehicleStyle.font = new BitmapFont();
+		enterVehicleStyle.fontColor = Color.RED;
+		enterVehicleStyle.checkedFontColor = Color.GREEN;
 
-		flyToggle = new TextButton("Fly", flyToggleStyle);
-		flyToggle.setWidth(Gdx.graphics.getWidth() / 8);
-		flyToggle.setHeight(Gdx.graphics.getHeight() / 8);
-		flyToggle.setPosition(Gdx.graphics.getWidth() - flyToggle.getWidth(), Gdx.graphics.getHeight() / 2);
-		flyToggle.addListener(new ChangeListener() {
-			public void changed(ChangeEvent event, Actor actor) {
-				if(flying == false)
-					flying = true;
-				else
-					flying = false;
+		enterVehicle = new TextButton("Enter Vehicle", enterVehicleStyle);
+		enterVehicle.setWidth(Gdx.graphics.getWidth() / 8);
+		enterVehicle.setHeight(Gdx.graphics.getHeight() / 8);
+		enterVehicle.setPosition(Gdx.graphics.getWidth() - enterVehicle.getWidth(), Gdx.graphics.getHeight() / 2);
+		enterVehicle.addListener(new ClickListener() 
+		{
+			public void clicked(InputEvent event, float x, float y)
+			{
+				
 			}
 		});
 
-		stage.addActor(flyToggle);
+		stage.addActor(enterVehicle);
 		stage.addActor(move);
 		stage.addActor(turn);
 		
 		Gdx.input.setInputProcessor(stage);
 	}
 	
-	public boolean getFlying()
+	public Button getDriving()
 	{
-		return flying;
+		return enterVehicle;
 	}
 	
 	public float getKnobValue(String knob)
