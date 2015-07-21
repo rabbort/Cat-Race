@@ -43,7 +43,7 @@ import com.badlogic.gdx.utils.Disposable;
 import com.mygdx.game.Vehicles.Vehicle;
 
 /** @author xoppa */
-public class BaseBulletTest extends BulletTest 
+public class BaseBulletTest extends BulletTest implements Screen
 {
 	// Set this to the path of the lib to use it on desktop instead of default lib.
 	private final static String customDesktopLib = null;//"D:\\Xoppa\\code\\libgdx\\extensions\\gdx-bullet\\jni\\vs\\gdxBullet\\x64\\Debug\\gdxBullet.dll";
@@ -87,7 +87,15 @@ public class BaseBulletTest extends BulletTest
 	public Vehicle vehicle;
 	private Player player;
 	
+	private MyGdxGame game;
+	
 	protected final static Vector3 tmpV1 = new Vector3(), tmpV2 = new Vector3();
+	
+	public BaseBulletTest(MyGdxGame game)
+	{
+		this.game = game;
+		create();
+	}
 
 	public BulletWorld createWorld () 
 	{
