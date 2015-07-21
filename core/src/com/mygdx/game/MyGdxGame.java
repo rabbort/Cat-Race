@@ -7,6 +7,16 @@ public class MyGdxGame extends Game
 	@Override
 	public void create() 
 	{
-		//setScreen(new MainMenu(this));
+		this.setScreen(new MainMenu(this));
+	}
+	
+	public void render()
+	{
+		super.render();
+	}
+	
+	public void dispose()
+	{
+		
 	}
 }
