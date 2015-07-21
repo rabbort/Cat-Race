@@ -333,13 +333,13 @@ public class Terrain
 	                vertices[idx++] = scale * z;
 	                
 	                // Exaggerate high values to create larger mountains
-	                /*if(heightMap[hIdx] > 2.7)
+	                if(heightMap[hIdx] > 2.7)
 	                	heightMap[hIdx] *= 5;
 	                else if(heightMap[hIdx] > 2.4)
 	                	heightMap[hIdx] *= 4.5;
 	                else if(heightMap[hIdx] > 2.0)
 	                	heightMap[hIdx] *= 3.3;
-	                else*/
+	                else
 	                	heightMap[hIdx] = 0;//MathUtils.random(0f, 0.2f);
 
 	                vertices[idx++] = heightMap[hIdx++] * strength;
