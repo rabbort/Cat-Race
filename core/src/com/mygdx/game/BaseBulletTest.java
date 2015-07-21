@@ -145,9 +145,9 @@ public class BaseBulletTest extends BulletTest
 		final float width = Gdx.graphics.getWidth();
 		final float height = Gdx.graphics.getHeight();
 		if (width > height)
-			camera = new ChaseCamera(67f, 3f * width / height, 3f);
+			camera = new ChaseCamera(67f, 3f * width / height, 3f, android ? controller : null);
 		else
-			camera = new ChaseCamera(67f, 3f, 3f * height / width);
+			camera = new ChaseCamera(67f, 3f, 3f * height / width, android ? controller : null);
 		camera.near = 0.01f;
 		camera.far = 5000f;
 		camera.update();

@@ -75,15 +75,17 @@ public class ChaseCamera extends PerspectiveCamera
 	public Vector3 tmp = new Vector3();
 	
 	private int scale = 1;
+	private AndroidController controller;
 	
 	public ChaseCamera() 
 	{
 		super();
 	}
 
-	public ChaseCamera(float fieldOfView, float viewportWidth, float viewportHeight) 
+	public ChaseCamera(float fieldOfView, float viewportWidth, float viewportHeight, AndroidController controller) 
 	{
 		super(fieldOfView, viewportWidth, viewportHeight);
+		this.controller = controller;
 	}
 	
 	private final static Vector3 current = new Vector3();
@@ -100,7 +102,12 @@ public class ChaseCamera extends PerspectiveCamera
 			
 			transform.getTranslation(direction);
 
-			desiredLocation.set(0f, 0f, -75f * scale);
+			desiredLocation.set(scale > 1 ? (controller != null ? controller.getKnobValue("turnX") : Gdx.input.getX()) 
+					: 0f, 0f, -75f * scale);
+			if(desiredLocation.x > 150)
+				desiredLocation.x = 150;
+			else if (desiredLocation.x < -150)
+				desiredLocation.x = -150;
 			desiredOffset.set(0f, scale > 1 ? 7f : 1f, 0f);
 
 			targetLocation.set(0f, 0f, 5f);

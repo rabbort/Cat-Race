@@ -107,12 +107,12 @@ public class Vehicle
 		
 		final float delta = Gdx.graphics.getDeltaTime();
 		float angle = currentAngle;
-		if (this.base.getController() != null ? this.base.getController().getKnobValue("turnX") > 0 : Gdx.input.isKeyPressed(Keys.D))//(Gdx.input.isKeyPressed(Keys.D) || this.base.getController().getKnobValue("turnX") > 0) 
+		if (this.base.getController() != null ? this.base.getController().getKnobValue("moveX") > 15 : Gdx.input.isKeyPressed(Keys.D))//(Gdx.input.isKeyPressed(Keys.D) || this.base.getController().getKnobValue("turnX") > 0) 
 		{
 			if (angle > 0f) angle = 0f;
 			angle = MathUtils.clamp(angle - steerSpeed * delta, -maxAngle, 0f);
 		} 
-		else if(this.base.getController() != null ? this.base.getController().getKnobValue("turnX") < 0 : Gdx.input.isKeyPressed(Keys.A))//(Gdx.input.isKeyPressed(Keys.A) || this.base.getController().getKnobValue("turnX") < 0) 
+		else if(this.base.getController() != null ? this.base.getController().getKnobValue("moveX") < -15 : Gdx.input.isKeyPressed(Keys.A))//(Gdx.input.isKeyPressed(Keys.A) || this.base.getController().getKnobValue("turnX") < 0) 
 		{
 			if (angle < 0f) angle = 0f;
 			angle = MathUtils.clamp(angle + steerSpeed * delta, 0f, maxAngle);
