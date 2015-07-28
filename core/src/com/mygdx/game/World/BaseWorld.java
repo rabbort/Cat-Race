@@ -14,7 +14,7 @@
  * limitations under the License.
  ******************************************************************************/
 
-package com.mygdx.game;
+package com.mygdx.game.World;
 
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.Model;
@@ -58,6 +58,11 @@ public class BaseWorld<T extends BaseEntity> implements Disposable
 	public void add (final T entity) 
 	{
 		entities.add(entity);
+	}
+	
+	public void remove(final T entity)
+	{
+		entities.removeValue(entity, false);
 	}
 
 	public T add (final String type, float x, float y, float z) 

@@ -12,12 +12,12 @@ import com.badlogic.gdx.physics.bullet.dynamics.btRaycastVehicle;
 import com.badlogic.gdx.physics.bullet.dynamics.btRaycastVehicle.btVehicleTuning;
 import com.badlogic.gdx.physics.bullet.dynamics.btRigidBody;
 import com.badlogic.gdx.physics.bullet.dynamics.btVehicleRaycaster;
-import com.mygdx.game.BaseBulletTest;
-import com.mygdx.game.BulletEntity;
+import com.mygdx.game.World.BulletEntity;
+import com.mygdx.game.World.GameManager;
 
 public class Vehicle 
 {
-	private BaseBulletTest base;
+	private GameManager base;
 	
 	private btVehicleRaycaster raycaster;
 	private btRaycastVehicle vehicle;
@@ -42,7 +42,7 @@ public class Vehicle
 	private BulletEntity driver;
 	private Matrix4 driverPosition = new Matrix4();
 	
-	public Vehicle(BaseBulletTest base, Vector3 location)
+	public Vehicle(GameManager base, Vector3 location)
 	{
 		this.base = base;
 		
@@ -73,12 +73,12 @@ public class Vehicle
 		vehicle.addWheel(tmp.set(chassis.getChassisHalfExtents()).scl(-0.8f, -0.8f, -0.55f), direction, 
 				axis, wheels[3].getWheelHalfExtents().z * 0.3f, wheels[3].getWheelHalfExtents().z, tuning, false);
 		
-		maxForce = 300f;
+		maxForce = 3000f;
 		currentForce = 0f;
-		acceleration = 50f;
-		maxAngle = 25f;
+		acceleration = 5000f;
+		maxAngle = 45f;
 		currentAngle = 0f;
-		steerSpeed = 5f;
+		steerSpeed = 10f;
 		
 		this.base.disposables.add(vehicle);
 		this.base.disposables.add(raycaster);

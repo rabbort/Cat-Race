@@ -10,20 +10,20 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.physics.bullet.collision.btBoxShape;
 import com.badlogic.gdx.utils.JsonReader;
-import com.mygdx.game.BaseBulletTest;
-import com.mygdx.game.BulletConstructor;
-import com.mygdx.game.BulletEntity;
+import com.mygdx.game.World.BulletConstructor;
+import com.mygdx.game.World.BulletEntity;
+import com.mygdx.game.World.GameManager;
 
 public class Chassis 
 {
-	private BaseBulletTest base;
+	private GameManager base;
 	private BulletEntity chassis;
 	private Model chassisModel;
 	private ModelData chassisData;
 	private ModelLoader modelLoader;
 	private Vector3 chassisHalfExtents;
 	
-	public Chassis(BaseBulletTest base, Vector3 location)
+	public Chassis(GameManager base, Vector3 location)
 	{
 		this.base = base;
 		
@@ -35,7 +35,7 @@ public class Chassis
 			chassisModel = new Model(chassisData, new TextureProvider.FileTextureProvider());
 			chassisHalfExtents = chassisModel.calculateBoundingBox(new BoundingBox()).getDimensions(new Vector3()).scl(0.5f);
 			
-			this.base.world.addConstructor("chassis", new BulletConstructor(chassisModel, 100f, new btBoxShape(chassisHalfExtents)));
+			this.base.world.addConstructor("chassis", new BulletConstructor(chassisModel, 1000f, new btBoxShape(chassisHalfExtents)));
 			this.base.disposables.add(chassisModel);
 			
 			chassis = this.base.world.add("chassis", location.x, location.y, location.z);

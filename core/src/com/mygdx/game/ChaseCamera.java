@@ -108,7 +108,7 @@ public class ChaseCamera extends PerspectiveCamera
 				desiredLocation.x = 150;
 			else if (desiredLocation.x < -150)
 				desiredLocation.x = -150;
-			desiredOffset.set(0f, scale > 1 ? 7f : 1f, 0f);
+			desiredOffset.set(0f, scale > 1 ? 7f : 3f, 0f);
 
 			targetLocation.set(0f, 0f, 5f);
 			targetOffset.set(0f, 1f, 0f);

@@ -14,7 +14,7 @@
  * limitations under the License.
  ******************************************************************************/
 
-package com.mygdx.game;
+package com.mygdx.game.World;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g3d.Environment;

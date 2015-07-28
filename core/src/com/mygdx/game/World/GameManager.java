@@ -1,23 +1,10 @@
-/*******************************************************************************
- * Copyright 2011 See AUTHORS file.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *   http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- ******************************************************************************/
+package com.mygdx.game.World;
 
-package com.mygdx.game;
+import java.io.IOException;
 
 import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
@@ -40,13 +27,25 @@ import com.badlogic.gdx.physics.bullet.linearmath.LinearMath;
 import com.badlogic.gdx.physics.bullet.linearmath.btIDebugDraw.DebugDrawModes;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
+import com.mygdx.game.AndroidController;
+import com.mygdx.game.ChaseCamera;
+import com.mygdx.game.MyGdxGame;
+import com.mygdx.game.Player;
+import com.mygdx.game.PlayerManager;
+import com.mygdx.game.Environment.SkyDome;
+import com.mygdx.game.Environment.TerrainManager;
 import com.mygdx.game.Vehicles.Vehicle;
+import com.mygdx.game.kryonet.GameClient;
+import com.mygdx.game.kryonet.GameServer;
+import com.mygdx.game.kryonet.Network;
+import com.mygdx.game.kryonet.Network.UpdateCharacter;
 
-/** @author xoppa */
-public class BaseBulletTest extends BulletTest implements Screen
+public class GameManager extends BulletTest implements Screen
 {
+	public static GameManager inst;
+	
 	// Set this to the path of the lib to use it on desktop instead of default lib.
-	private final static String customDesktopLib = null;//"D:\\Xoppa\\code\\libgdx\\extensions\\gdx-bullet\\jni\\vs\\gdxBullet\\x64\\Debug\\gdxBullet.dll";
+	private final static String customDesktopLib = null;
 
 	private static boolean initialized = false;
 	
@@ -68,7 +67,7 @@ public class BaseBulletTest extends BulletTest implements Screen
 	public Environment environment;
 	public DirectionalLight light;
 	public ModelBatch shadowBatch;
-	public Matrix4 character;
+	public Matrix4 character = new Matrix4();
 	public SkyDome sky;
 	private TerrainManager terrainManager;
 	
@@ -89,11 +88,25 @@ public class BaseBulletTest extends BulletTest implements Screen
 	
 	private MyGdxGame game;
 	
+	private Network network;
+	private GameClient client;
+	private GameServer server;
+	private PlayerManager pm;
+	private byte ID;
+	private Vector3 startPosition;
+	
 	protected final static Vector3 tmpV1 = new Vector3(), tmpV2 = new Vector3();
 	
-	public BaseBulletTest(MyGdxGame game)
+	public GameManager()
+	{
+		
+	}
+	
+	public GameManager(MyGdxGame game, Network.Character player)
 	{
 		this.game = game;
+		ID = player.id;
+		startPosition = player.transform;
 		create();
 	}
 
@@ -124,6 +137,8 @@ public class BaseBulletTest extends BulletTest implements Screen
 	public void create () 
 	{
 		init();
+		inst = this;
+		pm = new PlayerManager();
 		
 		// Find out if we are playing on desktop or android
 		switch(Gdx.app.getType())
@@ -163,9 +178,38 @@ public class BaseBulletTest extends BulletTest implements Screen
 		terrainManager = new TerrainManager(playerPosition, this);
 		sky = new SkyDome(this);
 		
-		vehicle = new Vehicle(this, new Vector3(0,20,0));
+		startConnection();
 		
-		player = new Player(this);
+		player = new Player(startPosition);
+		player.setID(ID);
+	}
+	
+	public void startConnection()
+	{
+		network = new Network();
+		client = new GameClient();
+	}
+	
+	public void updatePlayerTransform(Matrix4 transform, byte id, byte status)
+	{
+		client.updateCharacter(id, transform, status);
+	}
+	
+	public void Spawn(Vector3 startPosition)
+	{
+		vehicle = new Vehicle(this, startPosition);
+		player = new Player(startPosition);
+		player.setID(ID);
+	}
+	
+	public void setID(byte id)
+	{
+		ID = id;
+	}
+	
+	public Player getClientPlayer()
+	{
+		return player;
 	}
 
 	@Override
@@ -194,8 +238,8 @@ public class BaseBulletTest extends BulletTest implements Screen
 	}
 
 	@Override
-	public void render () 
-	{
+	public void render (float delta) 
+	{		
 		render(true);
 	}
 
@@ -227,11 +271,24 @@ public class BaseBulletTest extends BulletTest implements Screen
 		Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		Gdx.gl.glClearColor(0, 0, 0, 0);
 		Gdx.gl.glClear(GL30.GL_COLOR_BUFFER_BIT | GL30.GL_DEPTH_BUFFER_BIT);
-		
+
 		character.getTranslation(playerPosition);
-		terrainManager.update(playerPosition);
-		vehicle.update();
+		terrainManager.setPosition(playerPosition);
+		terrainManager.update();
+		
+		if(vehicle != null)
+		{
+			vehicle.update();
+			
+		}
+		
 		player.update();
+		
+		// Update the other players in the game
+		for(int i = 0; i < PlayerManager.playerManager.getPlayers().size; i++)
+		{
+			PlayerManager.playerManager.getPlayers().get(i).update();
+		}
 		
 		camera.transform.set(character);
 		camera.update();
@@ -257,5 +314,17 @@ public class BaseBulletTest extends BulletTest implements Screen
 	public void update () 
 	{
 		world.update();
+	}
+
+	@Override
+	public void show() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void hide() {
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -1,20 +1,22 @@
-package com.mygdx.game;
+package com.mygdx.game.Environment;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector3;
+import com.mygdx.game.World.BulletEntity;
+import com.mygdx.game.World.GameManager;
 
 public class SkyDome extends EnvironmentEntity 
 {
 	private BulletEntity sky;
 	private String name;
 	
-	public SkyDome(BaseBulletTest baseBulletTest)
+	public SkyDome(GameManager baseBulletTest)
 	{
 		name = "skyDome";
 		create(baseBulletTest);
 	}
 
-	public void create(BaseBulletTest base)
+	public void create(GameManager base)
 	{
 		super.create(Gdx.files.internal("data/skybox/skyball.g3dj"), base, false, name);
 

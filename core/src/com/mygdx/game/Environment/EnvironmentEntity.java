@@ -1,4 +1,4 @@
-package com.mygdx.game;
+package com.mygdx.game.Environment;
 
 import com.badlogic.gdx.assets.loaders.ModelLoader;
 import com.badlogic.gdx.files.FileHandle;
@@ -8,14 +8,16 @@ import com.badlogic.gdx.graphics.g3d.model.data.ModelData;
 import com.badlogic.gdx.graphics.g3d.utils.TextureProvider;
 import com.badlogic.gdx.physics.bullet.Bullet;
 import com.badlogic.gdx.utils.JsonReader;
+import com.mygdx.game.World.BulletConstructor;
+import com.mygdx.game.World.GameManager;
 
-public class EnvironmentEntity extends BaseBulletTest
+public class EnvironmentEntity extends GameManager
 {
 	private Model model;
 	private ModelData modelData;
 	private ModelLoader modelLoader;
 	
-	public void create(FileHandle handle, BaseBulletTest base, boolean shouldCollide, String name)
+	public void create(FileHandle handle, GameManager base, boolean shouldCollide, String name)
 	{
 		modelLoader = new G3dModelLoader(new JsonReader());
 		

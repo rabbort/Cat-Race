@@ -14,7 +14,7 @@
  * limitations under the License.
  ******************************************************************************/
 
-package com.mygdx.game;
+package com.mygdx.game.World;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.InputAdapter;
@@ -23,6 +23,7 @@ import com.badlogic.gdx.input.GestureDetector.GestureListener;
 import com.badlogic.gdx.math.FloatCounter;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.PerformanceCounter;
+import com.mygdx.game.ChaseCamera;
 
 /** @author xoppa */
 public class BulletTest extends InputAdapter implements ApplicationListener, InputProcessor, GestureListener 

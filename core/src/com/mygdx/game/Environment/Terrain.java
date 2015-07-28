@@ -1,13 +1,11 @@
-package com.mygdx.game;
+package com.mygdx.game.Environment;
 
 import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.graphics.Mesh;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.FloatAttribute;
-import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.model.MeshPart;
 import com.badlogic.gdx.graphics.g3d.model.Node;
 import com.badlogic.gdx.graphics.g3d.model.NodePart;
@@ -17,110 +15,60 @@ import com.badlogic.gdx.graphics.VertexAttribute;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Matrix3;
-import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btBvhTriangleMeshShape;
 import com.badlogic.gdx.physics.bullet.collision.btTriangleIndexVertexArray;
+import com.mygdx.game.World.BulletConstructor;
+import com.mygdx.game.World.BulletEntity;
+import com.mygdx.game.World.GameManager;
 
 import NoiseGeneration.NoiseGenerator;
 
-public class Terrain
+public class Terrain implements Runnable
 {
 	private TerrainChunk chunk;
 	private Mesh mesh;
-	
-	private ShaderProgram shader;
-	private Texture terrainTexture;
-	
-	private final Matrix3 normalMatrix = new Matrix3();
-	
-	private static final float[] lightPosition = { 5, 35, 5 };
-	private static final float[] ambientColor = { 0.2f, 0.2f, 0.2f, 1.0f };
-	private static final float[] diffuseColor = { 0.5f, 0.5f, 0.5f, 1.0f };
-	private static final float[] specularColor = { 0.7f, 0.7f, 0.7f, 1.0f };
-	
-	private Matrix4 modelView = new Matrix4();
 	private Model terrainModel;
 	private Material material;
 	private String location;
 	private Vector3 center = new Vector3();
-	
-	private BaseBulletTest base;
+	private GameManager base;
 	private static double[][] simplex;
-	private static int terrainScale = 20;
-	
+	private static int terrainScale = 4;
 	private BulletEntity terrain;
 	
-	private final String vertexShader =
-        "attribute vec4 a_position; \n" +
-        "attribute vec3 a_normal; \n" +
-        "attribute vec2 a_texCoord; \n" +
-        "attribute vec4 a_color; \n" +
+	private Thread terrainThread;
 
-        "uniform mat4 u_MVPMatrix; \n" +
-        "uniform mat3 u_normalMatrix; \n" +
-
-        "uniform vec3 u_lightPosition; \n" +
-
-        "varying float intensity; \n" +
-        "varying vec2 texCoords; \n" +
-        "varying vec4 v_color; \n" +
-
-        "void main() { \n" +
-        "    vec3 normal = normalize(u_normalMatrix * a_normal); \n" +
-        "    vec3 light = normalize(u_lightPosition); \n" +
-        "    intensity = max( dot(normal, light) , 0.0); \n" +
-
-        "    v_color = a_color; \n" +
-        "    texCoords = a_texCoord; \n" +
-
-        "    gl_Position = u_MVPMatrix * a_position; \n" +
-        "}";
-
-	private final String fragmentShader =
-        "#ifdef GL_ES \n" +
-        "precision mediump float; \n" +
-        "#endif \n" +
-
-        "uniform vec4 u_ambientColor; \n" +
-        "uniform vec4 u_diffuseColor; \n" +
-        "uniform vec4 u_specularColor; \n" +
-
-        "uniform sampler2D u_texture; \n" +
-        "varying vec2 texCoords; \n" +
-        "varying vec4 v_color; \n" +
-
-        "varying float intensity; \n" +
-
-        "void main() { \n" +
-        "    gl_FragColor = v_color * intensity * texture2D(u_texture, texCoords); \n" +
-        "}";
-
-	public Terrain(BaseBulletTest base, String location, Vector3 center)
+	public Terrain(GameManager base, String location, Vector3 center)
 	{
 		this.base = base;
 		this.location = location;
 		this.center = center;
 		
-		create(this.base);
+		terrainThread = new Thread(this, "terrain"+location);
+		terrainThread.start();
 	}
 	
-	public void update()
+	@Override
+	public void run() 
 	{
-		render();
+		// position, normal, color, texture
+		int vertexSize = 3 + 3 + 1 + 2; 
+		// Create the new chunk on this thread
+		chunk = new TerrainChunk(128, 128, vertexSize, this.location, this.center);
+		// Pass the results to opengl
+		Gdx.app.postRunnable(new Runnable() 
+		{
+			@Override
+			public void run()
+			{
+				create();
+			}
+		});
 	}
 	
-	public void create(BaseBulletTest base) 
-	{
-	    // Terrain texture size is 128x128
-	    terrainTexture = new Texture(Gdx.files.internal("data/chara.jpg"));
-
-	    // position, normal, color, texture
-	    int vertexSize = 3 + 3 + 1 + 2;  
-	
-	    chunk = new TerrainChunk(128, 128, vertexSize, this.location, this.center);
-	    
+	public void create() 
+	{  
 	    mesh = new Mesh(true, chunk.vertices.length / 3, chunk.indices.length,
 	            new VertexAttribute(Usage.Position, 3, ShaderProgram.POSITION_ATTRIBUTE),
 	            new VertexAttribute(Usage.Normal, 3, ShaderProgram.NORMAL_ATTRIBUTE),
@@ -128,10 +76,6 @@ public class Terrain
 	            new VertexAttribute(Usage.TextureCoordinates, 2, ShaderProgram.TEXCOORD_ATTRIBUTE));
 	    mesh.setVertices(chunk.vertices);
 	    mesh.setIndices(chunk.indices);
-	
-	    ShaderProgram.pedantic = false;
-	
-	    shader = new ShaderProgram(vertexShader, fragmentShader);
 	    
 	    material = new Material(ColorAttribute.createSpecular(1,1,1,1), FloatAttribute.createShininess(8f));
 	    
@@ -166,7 +110,6 @@ public class Terrain
 	    
 	    this.base.world.addConstructor("terrain"+this.location, new BulletConstructor(terrainModel, 0f, terrainShape));
 	    this.base.disposables.add(terrainModel);
-	    this.base.disposables.add(terrainTexture);
 	    this.base.disposables.add(vertArray);
 	    this.base.disposables.add(terrainShape);
 	    
@@ -193,36 +136,6 @@ public class Terrain
 	    }
 
 	    this.base.disposables.add(terrain);
-	}
-	
-	public ShaderProgram getShader()
-	{
-		return shader;
-	}
-	
-	//@Override
-	public void render() 
-	
-	{	
-		terrainTexture.bind();
-	    shader.begin();
-	    Matrix4 model = new Matrix4();
-	    modelView.set(this.base.camera.view).mul(model);
-	
-	    shader.setUniformMatrix("u_MVPMatrix", this.base.camera.combined);
-	    shader.setUniformMatrix("u_normalMatrix", normalMatrix.set(modelView).inv().transpose());
-
-	
-	    shader.setUniform3fv("u_lightPosition", lightPosition, 0, 3);
-	    shader.setUniform4fv("u_ambientColor", ambientColor, 0, 4);
-	    shader.setUniform4fv("u_diffuseColor", diffuseColor, 0, 4);
-	    shader.setUniform4fv("u_specularColor", specularColor, 0, 4);
-	
-	    //shader.setUniformi("u_texture", 0);
-	    
-	    mesh.render(shader, GL30.GL_TRIANGLES);
-	
-	    shader.end();
 	}
 	
 	final static class TerrainChunk 
@@ -274,32 +187,32 @@ public class Terrain
 	        
 	        switch(this.location)
 	        {
-	        	case "NW": 	xOffset = (int)this.center.x - 64 - (128 * 1);
-							yOffset = (int)this.center.z + 64 + (128 * 1);
+	        	case "NW": 	xOffset = ((int)this.center.x / terrainScale) - 64 - (128 * 1);
+							yOffset = ((int)this.center.z / terrainScale) + 64 + (128 * 1);
 							break;
-	        	case "N": 	xOffset = (int)this.center.x - 64 - (128 * 0);
-							yOffset = (int)this.center.z + 64 + (128 * 1);
+	        	case "N": 	xOffset = ((int)this.center.x / terrainScale) - 64 - (128 * 0);
+							yOffset = ((int)this.center.z / terrainScale) + 64 + (128 * 1);
 							break;
-	        	case "NE": 	xOffset = (int)this.center.x + 64 + (128 * 0);
-							yOffset = (int)this.center.z + 64 + (128 * 1);
+	        	case "NE": 	xOffset = ((int)this.center.x / terrainScale) + 64 + (128 * 0);
+							yOffset = ((int)this.center.z / terrainScale) + 64 + (128 * 1);
 							break;
-	        	case "W": 	xOffset = (int)this.center.x - 64 - (128 * 1);
-							yOffset = (int)this.center.z + 64 + (128 * 0);
+	        	case "W": 	xOffset = ((int)this.center.x / terrainScale) - 64 - (128 * 1);
+							yOffset = ((int)this.center.z / terrainScale) + 64 + (128 * 0);
 							break;
-	        	case "C": 	xOffset = (int)this.center.x - 64 - (128 * 0);
-							yOffset = (int)this.center.z + 64 + (128 * 0);
+	        	case "C": 	xOffset = ((int)this.center.x / terrainScale) - 64 - (128 * 0);
+							yOffset = ((int)this.center.z / terrainScale) + 64 + (128 * 0);
 							break;
-	        	case "E": 	xOffset = (int)this.center.x + 64 + (128 * 0);
-							yOffset = (int)this.center.z + 64 + (128 * 0);
+	        	case "E": 	xOffset = ((int)this.center.x / terrainScale) + 64 + (128 * 0);
+							yOffset = ((int)this.center.z / terrainScale) + 64 + (128 * 0);
 							break;
-	        	case "SW": 	xOffset = (int)this.center.x - 64 - (128 * 1);
-							yOffset = (int)this.center.z - 64 - (128 * 0);
+	        	case "SW": 	xOffset = ((int)this.center.x / terrainScale) - 64 - (128 * 1);
+							yOffset = ((int)this.center.z / terrainScale) - 64 - (128 * 0);
 							break;
-	        	case "S": 	xOffset = (int)this.center.x - 64 - (128 * 0);
-							yOffset = (int)this.center.z - 64 - (128 * 0);
+	        	case "S": 	xOffset = ((int)this.center.x / terrainScale) - 64 - (128 * 0);
+							yOffset = ((int)this.center.z / terrainScale) - 64 - (128 * 0);
 							break;
-	        	case "SE": 	xOffset = (int)this.center.x + 64 + (128 * 0);
-							yOffset = (int)this.center.z - 64 - (128 * 0);
+	        	case "SE": 	xOffset = ((int)this.center.x / terrainScale) + 64 + (128 * 0);
+							yOffset = ((int)this.center.z / terrainScale) - 64 - (128 * 0);
 							break;
 	        }
 	        
@@ -321,7 +234,7 @@ public class Terrain
 	
 	        int idx = 0;
 	        int hIdx = 0;
-	        int strength = 10; // multiplier for height map
+	        int strength = 300; // multiplier for height map
 	
 	        float scale = terrainScale;
 	
@@ -331,36 +244,29 @@ public class Terrain
 	            {
 	                // POSITION
 	                vertices[idx++] = scale * z;
-	                
-	                // Exaggerate high values to create larger mountains
-	                if(heightMap[hIdx] > 2.7)
-	                	heightMap[hIdx] *= 5;
-	                else if(heightMap[hIdx] > 2.4)
-	                	heightMap[hIdx] *= 4.5;
-	                else if(heightMap[hIdx] > 2.0)
-	                	heightMap[hIdx] *= 3.3;
-	                else
-	                	heightMap[hIdx] = 0;//MathUtils.random(0f, 0.2f);
-
-	                vertices[idx++] = heightMap[hIdx++] * strength;
+	                vertices[idx++] = heightMap[hIdx++] * strength - strength;
 	                vertices[idx++] = scale * x;
 	
 	                // NORMAL
 	                idx += 3;
-	
+	                
+	                int mountainCapBorder = MathUtils.random(60, 100);
+	                int mountainBorder = MathUtils.random(10, 30);
+	                int dirtBorder = MathUtils.random(-5, mountainBorder);
+	                int white = MathUtils.random(240, 255);
 	                // COLOR
-	                if(vertices[idx - 5] > 100)
-	                	vertices[idx++] = Color.WHITE.toFloatBits();
-	                else if(vertices[idx - 5] > 20)
+	                if(vertices[idx - 5] > mountainCapBorder)
+	                	vertices[idx++] = Color.toFloatBits(white, white, white, 1);
+	                else if(vertices[idx - 5] > mountainBorder)
 	                {
 	                	int grey = MathUtils.random(100, 200);
 	                	vertices[idx++] = Color.toFloatBits(grey, grey, grey, 1);
 	                }
-	                else if(vertices[idx - 5] > 15)
+	                else if(vertices[idx - 5] > dirtBorder)
 	                	vertices[idx++] = Color.toFloatBits(MathUtils.random(100, 120), MathUtils.random(60, 80), 
 	                			MathUtils.random(20, 30), 1);
-	                else //if(vertices[idx - 2])
-	                	vertices[idx++] = Color.toFloatBits(0, MathUtils.random(50, 90), 0, 1);//GREEN.toFloatBits();
+	                else
+	                	vertices[idx++] = Color.toFloatBits(0, MathUtils.random(50, 90), 0, 1);
 	
 	                // TEXTURE
 	                vertices[idx++] = (x / (float) width * scale);

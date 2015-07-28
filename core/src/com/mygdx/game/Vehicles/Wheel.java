@@ -9,20 +9,20 @@ import com.badlogic.gdx.graphics.g3d.utils.TextureProvider;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.JsonReader;
-import com.mygdx.game.BaseBulletTest;
-import com.mygdx.game.BulletConstructor;
-import com.mygdx.game.BulletEntity;
+import com.mygdx.game.World.BulletConstructor;
+import com.mygdx.game.World.BulletEntity;
+import com.mygdx.game.World.GameManager;
 
 public class Wheel 
 {
-	private BaseBulletTest base;
+	private GameManager base;
 	private BulletEntity wheel;
 	private ModelLoader modelLoader;
 	private Model wheelModel;
 	private ModelData wheelData;
 	private Vector3 wheelHalfExtents;
 	
-	public Wheel(BaseBulletTest base, Vector3 location)
+	public Wheel(GameManager base, Vector3 location)
 	{
 		this.base = base;
 		
