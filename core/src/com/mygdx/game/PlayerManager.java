@@ -24,13 +24,13 @@ public class PlayerManager
 		playerManager = this;
 	}
 	
-	public void addPlayer(ServerPlayer player, byte id)
+	public void addPlayer(ServerPlayer player, int id)
 	{
 		players.add(player);
 		players.get(players.size - 1).setID(id);
 	}
 	
-	public void removePlayer(byte id)
+	public void removePlayer(int id)
 	{
 		for(int i = 0; i < players.size; i++)
 		{
@@ -43,7 +43,7 @@ public class PlayerManager
 		}
 	}
 	
-	public void updatePlayers(byte id, Matrix4 transform, byte status)
+	public void updatePlayers(int id, String name, Matrix4 transform, byte status)
 	{
 		// Skip the update if the player is the client
 		if(GameManager.inst.getClientPlayer().getID() == id)
@@ -56,6 +56,7 @@ public class PlayerManager
 			{
 				players.get(i).setCharacterTransform(transform);
 				players.get(i).setStatus(status);
+				players.get(i).setName(name);
 				return;
 			}
 		}
@@ -64,5 +65,17 @@ public class PlayerManager
 		Vector3 position = new Vector3();
 		transform.getTranslation(position);
 		addPlayer(new ServerPlayer(position), id);
+	}
+	
+	public void sortPlayers()
+	{
+		for(int i = 0; i < players.size; i++)
+		{
+			for(int j = 0; j < players.size - j - 1; j++)
+			{
+				if(players.get(j).getPosition().z > players.get(j + 1).getPosition().z)
+					players.swap(j, j + 1);
+			}
+		}
 	}
 }

@@ -22,26 +22,29 @@ public class Wheel
 	private ModelData wheelData;
 	private Vector3 wheelHalfExtents;
 	
-	public Wheel(GameManager base, Vector3 location)
+	public Wheel(GameManager base, Vector3 location, String type)
 	{
 		this.base = base;
 		
 		// If there is no wheel constructor, set it up
-		if(this.base.world.getConstructor("wheel") == null)
+		if(this.base.world.getConstructor("wheel"+type) == null)
 		{
 			modelLoader = new G3dModelLoader(new JsonReader());
-			wheelData = modelLoader.loadModelData(Gdx.files.internal("data/vehicles/wheels/policewheel.g3dj"));
+			if(type == "bigtruck")
+				wheelData = modelLoader.loadModelData(Gdx.files.internal("data/vehicles/wheels/bigtruckwheel.g3dj"));
+			else
+				wheelData = modelLoader.loadModelData(Gdx.files.internal("data/vehicles/wheels/policewheel.g3dj"));
 			wheelModel = new Model(wheelData, new TextureProvider.FileTextureProvider());
 			wheelHalfExtents = wheelModel.calculateBoundingBox(new BoundingBox()).getDimensions(new Vector3()).scl(0.5f);
 			
-			this.base.world.addConstructor("wheel", new BulletConstructor(wheelModel, 0, null));
+			this.base.world.addConstructor("wheel"+type, new BulletConstructor(wheelModel, 0f, null));
 			this.base.disposables.add(wheelModel);
 			
-			wheel = this.base.world.add("wheel", location.x, location.y, location.z);
+			wheel = this.base.world.add("wheel"+type, location.x, location.y, location.z);
 		}
 		else
 		{
-			wheel = this.base.world.add("wheel", location.x, location.y, location.z);
+			wheel = this.base.world.add("wheel"+type, location.x, location.y, location.z);
 			wheelHalfExtents = wheel.modelInstance.model.calculateBoundingBox(new BoundingBox()).getDimensions(new Vector3()).scl(0.5f);
 		}
 	}

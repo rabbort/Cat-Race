@@ -1,26 +1,24 @@
 package com.mygdx.game.Environment;
 
+import java.util.Random;
+
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.Array;
 import com.mygdx.game.World.GameManager;
 
 public class TerrainManager extends GameManager
 {	
-	private static final String[] chunkLocation = 
-		{ 	
-			"NW", "N", "NE",
-			"W", "C", "E",
-			"SW", "S", "SE"
-		};
-	
-	private int xOffsetNegative;
-	private int xOffsetPositive;
-	private int zOffsetNegative;
-	private int zOffsetPositive;
-	private Terrain[] terrainChunks;
+	private Random roads;
+	private int offset;
 	private GameManager base;
 	private Vector3 center = new Vector3();
 	private Vector3 playerPosition = new Vector3();
-	private int terrainScale = 4;
+	private int terrainScale = 5;
+	private Array<Terrain> terrain;
+	private int[] startPoints = new int[3];
+	private int chunksToStart = 4;
+	private int terrainLength = 128;
+	private int terrainWidth = 128;
 	
 	public TerrainManager()
 	{
@@ -29,23 +27,40 @@ public class TerrainManager extends GameManager
 	
 	public TerrainManager(Vector3 position, GameManager base)
 	{
+		terrain = new Array<>();
 		this.base = base;
 		this.center = position.cpy();
 		this.center.x = (int)this.center.x;
 		this.center.z = (int)this.center.z;
+		roads = new Random((long)(position.x + position.y + position.z));
 		
-		terrainChunks = new Terrain[9];
+		startPoints = getRoads();
+		startPoints[1] = 64;
 		
-		// Create each terrain chunk based on the starting position
-		for(int i = 0; i < terrainChunks.length; i++)
+		// Add the initial chunk. It will have walls on three sides
+		terrain.add(new Terrain(this.base, this.center, false, true, startPoints));
+		
+		offset = (int)this.center.x + terrainLength * terrainScale;
+		
+		// Load in several chunks on start so the player wont actually see the new chunks being created
+		for(int i = 0; i < chunksToStart; i++)
 		{
-			terrainChunks[i] = new Terrain(this.base, chunkLocation[i], this.center);
+			this.center.x += terrainWidth * terrainScale;
+			startPoints = terrain.peek().getStart();
+			terrain.add(new Terrain(this.base, this.center, false, false, startPoints));
 		}
+	}
+	
+	// Generates the starting/ending points for the roads
+	private int[] getRoads()
+	{
+		int[] roadPoints = new int[3];
 		
-		xOffsetNegative = (int)this.center.x - 64 * terrainScale;
-		xOffsetPositive = (int)this.center.x + 64 * terrainScale;
-		zOffsetNegative = (int)this.center.z - 64 * terrainScale;
-		zOffsetPositive = (int)this.center.z + 64 * terrainScale;
+		roadPoints[0] = roads.nextInt(128);
+		roadPoints[1] = roads.nextInt(128);
+		roadPoints[2] = roads.nextInt(128);
+		
+		return roadPoints;
 	}
 
 	
@@ -56,59 +71,16 @@ public class TerrainManager extends GameManager
 	
 	public void update()
 	{	
-		// Shift terrain chunks over one space, create new ones in the empty spots
-		if(this.playerPosition.x > xOffsetPositive)
-		{
-			// update the center
-			this.center.x += 128 * terrainScale;
-
-			terrainChunks[2] = new Terrain(this.base, chunkLocation[2], this.center);
-			terrainChunks[5] = new Terrain(this.base, chunkLocation[5], this.center);
-			terrainChunks[8] = new Terrain(this.base, chunkLocation[8], this.center);
-
-			xOffsetPositive += 128 * terrainScale;
-			xOffsetNegative += 128 * terrainScale;
-			System.out.println("positive x "+this.center);
-		}
-		else if(this.playerPosition.x < xOffsetNegative)
+		if(this.playerPosition.x > offset)
 		{
 			//update the center
-			this.center.x -= 128 * terrainScale;
+			this.center.x += terrainWidth * terrainScale;
 			
-			terrainChunks[0] = new Terrain(this.base, chunkLocation[0], this.center);
-			terrainChunks[3] = new Terrain(this.base, chunkLocation[3], this.center);
-			terrainChunks[6] = new Terrain(this.base, chunkLocation[6], this.center);
-
-			xOffsetPositive -= 128 * terrainScale;
-			xOffsetNegative -= 128 * terrainScale;
-			System.out.println("neg x "+this.center);
-		}
-		
-		if(this.playerPosition.z > zOffsetPositive)
-		{
-			//update the center
-			this.center.z += 128 * terrainScale;
-
-			terrainChunks[0] = new Terrain(this.base, chunkLocation[0], this.center);
-			terrainChunks[1] = new Terrain(this.base, chunkLocation[1], this.center);
-			terrainChunks[2] = new Terrain(this.base, chunkLocation[2], this.center);
+			// Feed where the road left off into the new terrain
+			startPoints = terrain.peek().getStart();
+			terrain.add(new Terrain(this.base, this.center, true, false, startPoints));
 			
-			zOffsetPositive += 128 * terrainScale;
-			zOffsetNegative += 128 * terrainScale;
-			System.out.println("pos z "+this.center);
-		}
-		else if(this.playerPosition.z < zOffsetNegative)
-		{
-			//update the center
-			this.center.z -= 128 * terrainScale;
-
-			terrainChunks[6] = new Terrain(this.base, chunkLocation[6], this.center);
-			terrainChunks[7] = new Terrain(this.base, chunkLocation[7], this.center);
-			terrainChunks[8] = new Terrain(this.base, chunkLocation[8], this.center);
-			
-			zOffsetPositive -= 128 * terrainScale;
-			zOffsetNegative -= 128 * terrainScale;
-			System.out.println("neg z "+this.center);
+			offset += terrainWidth * terrainScale;
 		}
 	}
 }

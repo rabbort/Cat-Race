@@ -8,6 +8,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btBroadphaseProxy;
 import com.badlogic.gdx.physics.bullet.dynamics.btDiscreteDynamicsWorld;
 import com.badlogic.gdx.physics.bullet.dynamics.btKinematicCharacterController;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.mygdx.game.World.GameManager;
 
 public class Player extends AbstractPlayer
@@ -18,6 +19,8 @@ public class Player extends AbstractPlayer
 	private Quaternion characterRotation = new Quaternion();
 	private Vector3 walkDirection = new Vector3();
 	private Vector3 desired = new Vector3();
+	private String name;
+	private float timer;
 	
 	public Player(Vector3 startPosition)
 	{
@@ -43,11 +46,17 @@ public class Player extends AbstractPlayer
 	private void sendTransform()
 	{
 		// Send the transform to the server
-		GameManager.inst.updatePlayerTransform(super.getCharacter().transform, super.getID(), super.getStatus());
+		if(timer < 0)
+		{
+			GameManager.inst.updatePlayerTransform(super.getCharacter().transform, name, super.getID(), super.getStatus());
+			timer = 0.01f;
+		}
 	}
 	
 	public void update () 
 	{
+		timer -= Gdx.graphics.getDeltaTime();
+		
 		super.getAnimation().update(Gdx.graphics.getDeltaTime());
 
 		GameManager.inst.setCharacter(getCharacterTransform());
@@ -57,15 +66,8 @@ public class Player extends AbstractPlayer
 		GameManager.inst.sky.moveSky(characterPosition);
 
 		// Handles entering/exiting vehicle
-		if(GameManager.inst.isAndroid())
-		{
-			if(GameManager.inst.getController().getDriving().getClickListener().isOver())
-				occupyVehicle();
-		}
-		else if(Gdx.input.isKeyJustPressed(Keys.E))
-		{
+		if(Gdx.input.isKeyJustPressed(Keys.E))
 			occupyVehicle();
-		}
 	
 		// Move according to android controls if on android, otherwise just use desktop controls
 		if(super.getStatus() != AbstractPlayer.driving)
@@ -151,8 +153,10 @@ public class Player extends AbstractPlayer
 		}
 
 		// Rotate player with mouse movements
-		getCharacterTransform().rotate(Vector3.Y, -0.2f * Gdx.input.getDeltaX());
-		//characterTransform.rotate(Vector3.X, -0.2f * Gdx.input.getDeltaY());
+		Vector3 position = new Vector3();
+		getCharacterTransform().getTranslation(position);
+		getCharacterTransform().set(position.x, position.y, position.z, 0, 0, 0, 0).rotate(Vector3.Y, -0.2f * Gdx.input.getX())/*.
+			rotate(Vector3.X, 0.2f * Gdx.input.getY())*/.scale(0.1f, 0.1f, 0.1f);
 
 		super.getGhostObject().setWorldTransform(getCharacterTransform());
 	}
@@ -167,6 +171,10 @@ public class Player extends AbstractPlayer
 		
 		// Rotate according to the turn knob
 		getCharacterTransform().rotate(0, 1, 0, -2f * GameManager.inst.getController().getKnobValue("turnX"));
+		if(Gdx.input.isKeyPressed(Keys.A))
+			getCharacterTransform().rotate(0, 1, 0, 80f * Gdx.graphics.getDeltaTime());
+		else if(Gdx.input.isKeyPressed(Keys.D))
+			getCharacterTransform().rotate(0, 1, 0, -80f * Gdx.graphics.getDeltaTime());
 			
 		super.getGhostObject().setWorldTransform(getCharacterTransform());
 		
@@ -175,30 +183,30 @@ public class Player extends AbstractPlayer
 		// Set the walking direction accordingly (either forward or backward)
 		walkDirection.set(0,0,0);
 		
-		if (GameManager.inst.getController().getKnobValue("moveY") > 0)
+		if (GameManager.inst.getController().getKnobValue("moveY") > 0 || Gdx.input.isKeyPressed(Keys.W))
 		{
 			if(!super.getAnimation().inAction)
 				walkDirection.add(characterDirection);
 
 			super.getAnimation().animate("run", -1, 0.8f, null, 0.2f);
 				
-			if(super.getStatus() != AbstractPlayer.forward)
-				super.setStatus(AbstractPlayer.forward);
+			if(super.getStatus() != forward)
+				super.setStatus(forward);
 		}
-		else if (GameManager.inst.getController().getKnobValue("moveY") < 0)
+		else if (GameManager.inst.getController().getKnobValue("moveY") < 0 || Gdx.input.isKeyPressed(Keys.S))
 		{
 			if(!super.getAnimation().inAction)
 				walkDirection.add(-characterDirection.x, -characterDirection.y, -characterDirection.z);
 
 			super.getAnimation().animate("run", -1, -0.8f, null, 0.2f);
 			
-			if(super.getStatus() != AbstractPlayer.backward)
-				super.setStatus(AbstractPlayer.backward);
+			if(super.getStatus() != backward)
+				super.setStatus(backward);
 		}
-		else if(super.getStatus() != AbstractPlayer.idle)
+		else if(super.getStatus() != idle)
 		{
 			super.getAnimation().queue("idle", -1, 0.5f, null, 0.2f);
-			super.setStatus(AbstractPlayer.idle);
+			super.setStatus(idle);
 		}
 		
 		// Strafing
@@ -207,30 +215,40 @@ public class Player extends AbstractPlayer
 			getCharacterTransform().translate(new Vector3(2 * Gdx.graphics.getDeltaTime(), 0, 0));
 			super.getGhostObject().setWorldTransform(getCharacterTransform());
 
-			super.setStatus(AbstractPlayer.left);
+			super.setStatus(left);
 		}
 		if (GameManager.inst.getController().getKnobValue("moveX") > 0.15f) 
 		{
 			getCharacterTransform().translate(new Vector3(-2 * Gdx.graphics.getDeltaTime(), 0, 0));
 			super.getGhostObject().setWorldTransform(getCharacterTransform());
 
-			super.setStatus(AbstractPlayer.right);
+			super.setStatus(right);
 		}
 	}
 	
-	private void occupyVehicle()
+	public void occupyVehicle()
 	{
 		if(super.getStatus() == AbstractPlayer.driving)
 		{
+			Vector3 position = new Vector3();
+			super.getCharacter().transform.getTranslation(position);
+			
 			GameManager.inst.camera.setScale(1);
 			super.setStatus(AbstractPlayer.idle);
-			GameManager.inst.vehicle.occupyVehicle(super.getCharacter());
+			
+			GameManager.inst.vehicleManager.occupy(super.getCharacter());
+			
+			// This is incase the car flips - it forces the character to be upright again
+			super.getCharacter().transform.set(position.x, position.y + 10, position.z, 0, 0, 0, 0);
+			super.getCharacter().transform.scale(0.1f, 0.1f, 0.1f);
 		}
 		else if(super.getStatus() != AbstractPlayer.driving)
 		{
 			GameManager.inst.camera.setScale(2);
-			super.setStatus(AbstractPlayer.driving);
-			GameManager.inst.vehicle.occupyVehicle(super.getCharacter());
+			if(GameManager.inst.vehicleManager.occupy(super.getCharacter()))
+			{
+				super.setStatus(AbstractPlayer.driving);
+			}
 		}
 	}
 	
@@ -245,5 +263,15 @@ public class Player extends AbstractPlayer
 	public Matrix4 getCharacterTransform() 
 	{
 		return super.getCharacter().transform;
+	}
+	
+	public String getName()
+	{
+		return name;
+	}
+	
+	public void setName(String name)
+	{
+		this.name = name;
 	}
 }

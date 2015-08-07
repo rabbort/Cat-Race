@@ -4,7 +4,7 @@ public class NoiseGenerator
 {
 	public static double[][] get2DNoise(int x, int y)
 	{
-		SimplexNoise noise = new SimplexNoise(200, 0.25, 5000);
+		SimplexNoise noise = new SimplexNoise(1000, 0.5, 5000);
 		
 		double[][] result = new double[129][129];
 		

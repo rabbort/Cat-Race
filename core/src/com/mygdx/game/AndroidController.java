@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
@@ -13,8 +14,10 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Touchpad;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Touchpad.TouchpadStyle;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
+import com.mygdx.game.World.GameManager;
 
 public class AndroidController //extends Player
 {
@@ -23,6 +26,7 @@ public class AndroidController //extends Player
 	Touchpad turn;
 	float deadzone;
 	Skin skin;
+	Skin buttonSkin;
 	Drawable background, knob;
 	TouchpadStyle style;
 	OrthographicCamera camera;
@@ -30,8 +34,13 @@ public class AndroidController //extends Player
 	int backgroundWidth;
 	int padding;
 	
-	Button enterVehicle;
+	TextButton enterVehicle;
 	TextButtonStyle enterVehicleStyle;
+	
+	TextButton vote;
+	TextButton flip;
+	
+	private boolean pressed;
 	
 	//@Override
 	public void dispose()
@@ -53,6 +62,8 @@ public class AndroidController //extends Player
 		skin.add("background", new Texture(Gdx.files.internal("data/touchBackground.png")));
 		skin.add("knob", new Texture(Gdx.files.internal("data/touchKnob.png")));
 		
+		buttonSkin = new Skin(Gdx.files.internal("data/uiskin.json"));
+		
 		background = skin.getDrawable("background");
 		knob = skin.getDrawable("knob");
 		
@@ -73,21 +84,30 @@ public class AndroidController //extends Player
 		enterVehicleStyle.fontColor = Color.RED;
 		enterVehicleStyle.checkedFontColor = Color.GREEN;
 
-		enterVehicle = new TextButton("Enter Vehicle", enterVehicleStyle);
-		enterVehicle.setWidth(Gdx.graphics.getWidth() / 8);
-		enterVehicle.setHeight(Gdx.graphics.getHeight() / 8);
+		buttonSkin.getFont("default-font").getData().setScale(2);
+		enterVehicle = new TextButton("Enter Vehicle", buttonSkin);
+		enterVehicle.setWidth(Gdx.graphics.getWidth() / 5);
+		enterVehicle.setHeight(Gdx.graphics.getHeight() / 16);
 		enterVehicle.setPosition(Gdx.graphics.getWidth() - enterVehicle.getWidth(), Gdx.graphics.getHeight() / 2);
-		enterVehicle.addListener(new ClickListener() 
-		{
-			public void clicked(InputEvent event, float x, float y)
-			{
-				
-			}
-		});
+		enterVehicle.addListener(makeChangeListener());
+		
+		vote = new TextButton("Vote to Restart", buttonSkin);
+		vote.setWidth(Gdx.graphics.getWidth() / 5);
+		vote.setHeight(Gdx.graphics.getHeight() / 16);
+		vote.setPosition(Gdx.graphics.getWidth() - vote.getWidth(), Gdx.graphics.getHeight() / 2 + vote.getHeight());
+		vote.addListener(makeVoteListener());
+		
+		flip = new TextButton("Flip Car", buttonSkin);
+		flip.setWidth(Gdx.graphics.getWidth() / 5);
+		flip.setHeight(Gdx.graphics.getHeight() / 16);
+		flip.setPosition(Gdx.graphics.getWidth() - flip.getWidth(), Gdx.graphics.getHeight() / 2 - flip.getHeight());
+		flip.addListener(makeFlipListener());
 
 		stage.addActor(enterVehicle);
 		stage.addActor(move);
 		stage.addActor(turn);
+		stage.addActor(vote);
+		stage.addActor(flip);
 		
 		Gdx.input.setInputProcessor(stage);
 	}
@@ -117,5 +137,86 @@ public class AndroidController //extends Player
 	{
 		stage.act(Gdx.graphics.getDeltaTime());
 		stage.draw();
+	}
+	
+	private ClickListener makeListener()
+	{
+		ClickListener listener = new ClickListener() 
+		{
+			public void clicked(InputEvent event, float x, float y)
+			{
+				pressed = !pressed;
+			}
+			
+			/*public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
+			{
+				System.out.println(enterVehicle.getText());
+				if(enterVehicle.getText().equals("Enter Vehicle"))
+					System.out.println("match");
+					//enterVehicle.setText("Exit Vehicle");
+				else
+					enterVehicle.setText("Enter Vehicle");
+				
+				pressed = true;
+				
+				return true;
+			}*/
+			
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				pressed = !pressed;
+			}
+		};
+		
+		listener.setTapCountInterval(1.0f);
+		
+		return listener;
+	}
+	
+	private ChangeListener makeChangeListener()
+	{
+		ChangeListener listener = new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor) 
+			{
+				GameManager.inst.getClientPlayer().occupyVehicle();
+			}
+		};
+		
+		return listener;
+	}
+	
+	private ChangeListener makeVoteListener()
+	{
+		ChangeListener listener = new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor) 
+			{
+				GameManager.inst.getClient().vote();
+			}
+		};
+		
+		return listener;
+	}
+	
+	private ChangeListener makeFlipListener()
+	{
+		ChangeListener listener = new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor) 
+			{
+				GameManager.inst.vehicleManager.getClientVehicle().flip();
+			}
+		};
+		
+		return listener;
+	}
+	
+	public boolean isPressed()
+	{
+		return pressed;
 	}
 }

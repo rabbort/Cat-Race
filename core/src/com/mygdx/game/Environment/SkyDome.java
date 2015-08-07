@@ -28,5 +28,6 @@ public class SkyDome extends EnvironmentEntity
 	{
 		newPosition.y -= 300f;
 		sky.modelInstance.transform.setToTranslation(newPosition);
+		sky.modelInstance.transform.scale(3.5f, 3.5f, 3.5f);
 	}
 }

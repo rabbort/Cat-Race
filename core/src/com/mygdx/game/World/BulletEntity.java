@@ -19,6 +19,8 @@ package com.mygdx.game.World;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject;
 import com.badlogic.gdx.physics.bullet.dynamics.btRigidBody;
 import com.badlogic.gdx.physics.bullet.dynamics.btRigidBody.btRigidBodyConstructionInfo;
@@ -29,27 +31,41 @@ public class BulletEntity extends BaseEntity {
 	private final static Matrix4 tmpM = new Matrix4();
 	public BulletEntity.MotionState motionState;
 	public btCollisionObject body;
+	public int type;
+	public final Vector3 position = new Vector3();
+	public final Vector3 center = new Vector3();
+	public final Vector3 dimensions = new Vector3();
+	private final static BoundingBox bounds = new BoundingBox();
+	private Model model;
 
 	public BulletEntity (final Model model, final btRigidBodyConstructionInfo bodyInfo, final float x, final float y, final float z) {
 		this(model, bodyInfo == null ? null : new btRigidBody(bodyInfo), x, y, z);
+		this.model = model;
+		this.position.set(x, y, z);
 	}
 
 	public BulletEntity (final Model model, final btRigidBodyConstructionInfo bodyInfo, final Matrix4 transform) {
 		this(model, bodyInfo == null ? null : new btRigidBody(bodyInfo), transform);
+		this.model = model;
 	}
 
 	public BulletEntity (final Model model, final btCollisionObject body, final float x, final float y, final float z) {
 		this(model, body, tmpM.setToTranslation(x, y, z));
+		this.model = model;
+		this.position.set(x, y, z);
 	}
 
 	public BulletEntity (final Model model, final btCollisionObject body, final Matrix4 transform) {
 		this(new ModelInstance(model, transform.cpy()), body);
+		this.model = model;
 	}
 
 	public BulletEntity (final ModelInstance modelInstance, final btCollisionObject body) {
 		this.modelInstance = modelInstance;
 		this.transform = this.modelInstance.transform;
 		this.body = body;
+		this.model = model;
+		modelInstance.transform.getTranslation(position);
 
 		if (body != null) {
 			body.userData = this;
@@ -90,5 +106,13 @@ public class BulletEntity extends BaseEntity {
 		public void setWorldTransform (final Matrix4 worldTrans) {
 			transform.set(worldTrans);
 		}
+	}
+	
+	public void setFrustumInfo()
+	{
+		model.calculateBoundingBox(bounds);
+		bounds.getCenter(center);
+		position.add(center);
+		bounds.getDimensions(dimensions);
 	}
 }

@@ -1,6 +1,8 @@
 package com.mygdx.game;
 
+import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
@@ -59,12 +61,12 @@ public class ChaseCamera extends PerspectiveCamera
 	/** The bounds for the camera to respect relative to the location, regardless rotation */
 	public final BoundingBox offsetBounds = new BoundingBox();
 	/** The maximum acceleration (units per square second) the camera can move */
-	public float acceleration = 0.4f;
+	public float acceleration = 1.4f;
 	/** The maximum speed (in degrees per second) to rotate around the object.
 	 * 0 = no rotation, just chase (as if the cam is connected to the object with a rope)
 	 * <1 = maximum rotation, don't interpolate (as if the cam is fixed to the object)
 	 * */
-	public float rotationSpeed = -1f;
+	public float rotationSpeed = 72f;
 	/** The squared minimum distance required to rotate around the object (must be greater than zero)  */
 	public float rotationOffsetSq = 0.1f * 0.1f;
 	/** Read this to get the current speed and direction (units per second) */
@@ -75,17 +77,18 @@ public class ChaseCamera extends PerspectiveCamera
 	public Vector3 tmp = new Vector3();
 	
 	private int scale = 1;
-	private AndroidController controller;
 	
 	public ChaseCamera() 
 	{
 		super();
 	}
 
-	public ChaseCamera(float fieldOfView, float viewportWidth, float viewportHeight, AndroidController controller) 
+	public ChaseCamera(float fieldOfView, float viewportWidth, float viewportHeight) 
 	{
 		super(fieldOfView, viewportWidth, viewportHeight);
-		this.controller = controller;
+		
+		if(Gdx.app.getType() == ApplicationType.Android)
+			acceleration += 200f;
 	}
 	
 	private final static Vector3 current = new Vector3();
@@ -95,15 +98,14 @@ public class ChaseCamera extends PerspectiveCamera
 	private final static Matrix4 rotationMatrix = new Matrix4();
 
 	public void update(final float delta, final boolean updateFrustum) 
-	{
+	{		
 		if (chasing && transform != null) 
 		{			
 			bounds.set(direction, direction.add(1f));
 			
 			transform.getTranslation(direction);
 
-			desiredLocation.set(scale > 1 ? (controller != null ? controller.getKnobValue("turnX") : Gdx.input.getX()) 
-					: 0f, 0f, -75f * scale);
+			desiredLocation.set(0f, 0f, -150f * scale);
 			if(desiredLocation.x > 150)
 				desiredLocation.x = 150;
 			else if (desiredLocation.x < -150)
@@ -161,12 +163,19 @@ public class ChaseCamera extends PerspectiveCamera
 
 			direction.add(target.set(targetLocation).rot(transform).add(targetOffset)).sub(position).nor();
 		}
+		
+		if(Gdx.input.isKeyJustPressed(Keys.L))
+			acceleration -= 1f;
+		if(Gdx.input.isKeyJustPressed(Keys.K))
+			acceleration += 1f;
+		
 		super.update(updateFrustum);
 	}
 
 	@Override
 	public void update() 
 	{
+		super.update();
 		update(true);
 	}
 	

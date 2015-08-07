@@ -1,15 +1,12 @@
 package com.mygdx.game.Menus;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
-
+import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
@@ -21,7 +18,6 @@ import com.mygdx.game.MyGdxGame;
 import com.mygdx.game.World.GameManager;
 import com.mygdx.game.kryonet.GameClient;
 import com.mygdx.game.kryonet.Network;
-import com.mygdx.game.kryonet.Network.Login;
 
 public class MainMenu implements Screen
 {
@@ -43,11 +39,20 @@ public class MainMenu implements Screen
 	
 	private Network network;
 	private GameClient client;
-	private byte clientID;
+	private int clientID;
 	private Network.Character player;
+	
+	private Texture logo;
+	private Texture title;
+	private SpriteBatch spriteBatch;
+	
+	private boolean android;
 	
 	public MainMenu(final MyGdxGame game)
 	{
+		if(Gdx.app.getType() == ApplicationType.Android)
+			android = true;
+		
 		this.game = game;
 		menu = this;
 		
@@ -61,32 +66,43 @@ public class MainMenu implements Screen
 	@Override
 	public void show()
 	{
+		logo = new Texture(Gdx.files.internal("data/icon.png"));
+		title = new Texture(Gdx.files.internal("data/title.png"));
+		spriteBatch = new SpriteBatch();
+		
 		stage = new Stage();
 		Gdx.input.setInputProcessor(stage);
 		
 		skin = new Skin(Gdx.files.internal("data/uiskin.json"));
+		if(android)
+			skin.getFont("default-font").getData().setScale(2);
 		
 		username = new TextField("", skin);
-		username.setPosition(Gdx.graphics.getWidth() / 2 - username.getWidth() / 2, Gdx.graphics.getHeight() / 2);
+		username.setWidth(username.getWidth() + 50);
+		username.setPosition(Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() / 3);
 		name = new TextField("Name:", skin);
-		name.setPosition(Gdx.graphics.getWidth() / 2 - name.getWidth() - 10, Gdx.graphics.getHeight() / 2);
+		name.setWidth(name.getWidth() + 50);
+		name.setPosition(Gdx.graphics.getWidth() / 2 - name.getWidth(), Gdx.graphics.getHeight() / 3);
 		name.setDisabled(true);
 
 		pass = new TextField("Password:", skin);
-		pass.setPosition(Gdx.graphics.getWidth() / 2 - pass.getWidth() - 10, Gdx.graphics.getHeight() / 2 - pass.getHeight());
+		pass.setWidth(pass.getWidth() + 50);
+		pass.setPosition(Gdx.graphics.getWidth() / 2 - pass.getWidth(), Gdx.graphics.getHeight() / 3 - pass.getHeight());
 		pass.setDisabled(true);
 		password = new TextField("", skin);
-		password.setPosition(Gdx.graphics.getWidth() / 2 - password.getWidth() / 2, Gdx.graphics.getHeight() / 2 - password.getHeight());
+		password.setWidth(password.getWidth() + 50);
+		password.setPosition(Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() / 3 - password.getHeight());
 		password.setPasswordMode(true);
 		password.setPasswordCharacter('*');
 		
 		error = new TextField("", skin);
-		error.setWidth(error.getWidth() + 15);
-		error.setPosition(Gdx.graphics.getWidth() / 2 - error.getWidth() / 2, Gdx.graphics.getHeight() / 2 - 3 * error.getHeight());
+		error.setWidth(password.getWidth() * 3);
+		error.setPosition(Gdx.graphics.getWidth() / 2 - error.getWidth() / 2, Gdx.graphics.getHeight() / 3 - 3 * error.getHeight());
 		error.setDisabled(true);
 		
 		register = new TextButton("Register", skin);
-		register.setPosition(Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() / 2 - 2 * register.getHeight());
+		register.setWidth(password.getWidth());
+		register.setPosition(Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() / 3 - 2 * register.getHeight());
 		register.addListener(new ChangeListener()
 		{
 			public void changed(ChangeEvent event, Actor actor)
@@ -96,8 +112,9 @@ public class MainMenu implements Screen
 		});
 		
 		login = new TextButton("Log in", skin);
+		login.setWidth(pass.getWidth());
 		login.setWidth(register.getWidth());
-		login.setPosition(Gdx.graphics.getWidth() / 2 - login.getWidth(), Gdx.graphics.getHeight() / 2 - 2 * login.getHeight());
+		login.setPosition(Gdx.graphics.getWidth() / 2 - login.getWidth(), Gdx.graphics.getHeight() / 3 - 2 * login.getHeight());
 		login.addListener(new ChangeListener() 
 		{
 			public void changed(ChangeEvent event, Actor actor) 
@@ -107,14 +124,15 @@ public class MainMenu implements Screen
 		});
 		
 		join = new TextButton("Join server", skin);
-		join.setPosition(Gdx.graphics.getWidth() / 2 - join.getWidth(), Gdx.graphics.getHeight() / 2 - 2 * join.getHeight());
+		join.setWidth(pass.getWidth());
+		join.setPosition(Gdx.graphics.getWidth() / 2 - join.getWidth(), Gdx.graphics.getHeight() / 3 - 2 * join.getHeight());
 		join.addListener(new ChangeListener()
 		{
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				Gdx.input.setInputProcessor(null);
 				dispose();
-				game.setScreen(new GameManager(game, player));
+				game.setScreen(new GameManager(game, player, clientID, client));
 				login = null;
 				camera = null;
 			}
@@ -144,7 +162,6 @@ public class MainMenu implements Screen
 			stage.addActor(error);
 			
 			error.setText("Login failed, try again");
-			error.setWidth(Gdx.graphics.getWidth() / 6);
 		}
 	}
 	
@@ -156,8 +173,6 @@ public class MainMenu implements Screen
 			error.setText("Registration successful");
 		else
 			error.setText("Name taken, select another");
-		
-		error.setWidth(Gdx.graphics.getWidth() / 4.8f);
 	}
 
 	@Override
@@ -170,6 +185,11 @@ public class MainMenu implements Screen
 		
 		stage.act(delta);
 		stage.draw();
+		
+		spriteBatch.begin();
+		spriteBatch.draw(logo, Gdx.graphics.getWidth() / 2 - logo.getWidth() / 2, Gdx.graphics.getHeight() / 1.65f);
+		spriteBatch.draw(title, Gdx.graphics.getWidth() / 2 - title.getWidth() / 2, Gdx.graphics.getHeight() / 2 - title.getHeight() / 2);
+		spriteBatch.end();
 	}
 
 	@Override
@@ -205,7 +225,7 @@ public class MainMenu implements Screen
 		game.dispose();
 	}
 	
-	public void setID(byte id)
+	public void setID(int id)
 	{
 		clientID = id;
 	}

@@ -21,15 +21,23 @@ import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.ObjectMap;
+import com.mygdx.game.ChaseCamera;
+import com.mygdx.game.Environment.Terrain;
+import com.badlogic.gdx.graphics.g3d.ModelInstance;
 
 /** @author xoppa No physics, simple base class for rendering a bunch of entities. */
 public class BaseWorld<T extends BaseEntity> implements Disposable 
 {
 	int terrain;
-	ShaderProgram shader;
+	Vector3 position = new Vector3();
+	Vector3 center = new Vector3();
+	Vector3 dimensions = new Vector3();
+	BoundingBox bounds = new BoundingBox();
 	
 	public static abstract class Constructor<T extends BaseEntity> implements Disposable 
 	{
@@ -48,6 +56,11 @@ public class BaseWorld<T extends BaseEntity> implements Disposable
 	{
 		constructors.put(name, constructor);
 		if (constructor.model != null && !models.contains(constructor.model, true)) models.add(constructor.model);
+	}
+	
+	public void removeConstructor(final String name)
+	{
+		constructors.remove(name);
 	}
 
 	public Constructor<T> getConstructor (final String name) 
@@ -68,6 +81,13 @@ public class BaseWorld<T extends BaseEntity> implements Disposable
 	public T add (final String type, float x, float y, float z) 
 	{
 		final T entity = constructors.get(type).construct(x, y, z);
+		// Set frustum info for static object so they can be culled when not in view
+		if(type.contains("terrain") || type.contains("floor") || type.contains("roof") || type.contains("block"))
+		{
+			((BulletEntity)entity).type = 1;
+			((BulletEntity)entity).setFrustumInfo();
+		}
+		
 		add(entity);
 		return entity;
 	}
@@ -86,14 +106,29 @@ public class BaseWorld<T extends BaseEntity> implements Disposable
 
 	public void render (final ModelBatch batch, final Environment lights, final Iterable<T> entities) 
 	{
-		for (final T e : entities) {
-			batch.render(e.modelInstance, lights);
+		for (final T e : entities) 
+		{
+			if(((BulletEntity)e).type == 1)
+			{
+				if(isVisible(GameManager.inst.camera, (BulletEntity)e))
+				{
+					batch.render(e.modelInstance, lights);
+				}
+			}
+			else
+				batch.render(e.modelInstance, lights);
 		}
 	}
 
 	public void render (final ModelBatch batch, final Environment lights, final T entity) 
 	{
-		batch.render(entity.modelInstance, lights);
+		//if(isVisible(GameManager.inst.camera, (BulletEntity)entity))
+			batch.render(entity.modelInstance, lights);
+	}
+	
+	private boolean isVisible(final ChaseCamera cam, final BulletEntity instance)
+	{
+		return cam.frustum.boundsInFrustum(instance.position, instance.dimensions);
 	}
 
 	public void update () 

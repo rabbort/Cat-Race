@@ -20,6 +20,7 @@ public class ServerScreen implements Screen
 	private GameServer server;
 	
 	private TextArea textField;
+	private TextField ip;
 	private Skin skin;
 	
 	public ServerScreen(MyGdxGame game)
@@ -45,6 +46,10 @@ public class ServerScreen implements Screen
 		textField.setHeight(Gdx.graphics.getHeight());
 		textField.setPosition(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() / 2, Align.right);
 		textField.setDisabled(true);
+		
+		ip = new TextField("", skin);
+		ip.setPosition(0, Gdx.graphics.getHeight());
+		ip.setDisabled(true);
 		
 		stage.addActor(textField);
 	}

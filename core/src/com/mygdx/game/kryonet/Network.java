@@ -1,16 +1,14 @@
 package com.mygdx.game.kryonet;
 
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryonet.EndPoint;
 
 // This class is a convenient place to keep things common to both the client and server.
 public class Network 
 {
-	static public final int tcp = 53535;
-	static public final int udp = 53536;
+	static public final int tcp = 29900;
+	static public final int udp = 29901;
 	public static String host = "72.238.13.232";
 	public static int writeBufferSize = 256000;
 	public static int objectBufferSize = 128000;
@@ -20,12 +18,15 @@ public class Network
 	{
 		kryo.register(Login.class);
 		kryo.register(UpdateCharacter.class);
+		kryo.register(UpdateVehicle.class);
 		kryo.register(RemoveCharacter.class);
 		kryo.register(Character.class);
 		kryo.register(ClientID.class);
 		kryo.register(StartPosition.class);
 		kryo.register(Register.class);
 		kryo.register(Registered.class);
+		kryo.register(Vote.class);
+		kryo.register(VotesNeeded.class);
 		kryo.register(com.badlogic.gdx.math.Vector3.class);
 		kryo.register(com.badlogic.gdx.math.Matrix4.class);
 		kryo.register(float[].class);
@@ -57,24 +58,42 @@ public class Network
 	{
 		public boolean valid;
 		public String name;
-		public byte id;
+		public int id;
 		public Vector3 transform;
+	}
+	
+	static public class Vote
+	{
+		public boolean voted;
+	}
+	
+	static public class VotesNeeded
+	{
+		public int votes;
 	}
 	
 	static public class ClientID
 	{
-		public byte id;
+		public int id;
 	}
 
 	static public class UpdateCharacter 
 	{
-		public byte id;
+		public int id;
+		public String name;
 		public byte status;
 		public Matrix4 transform;
+	}
+	
+	static public class UpdateVehicle
+	{
+		public Matrix4 transform;
+		public int id;
+		public boolean hasDriver;
 	}
 
 	static public class RemoveCharacter 
 	{
-		public byte id;
+		public int id;
 	}
 }

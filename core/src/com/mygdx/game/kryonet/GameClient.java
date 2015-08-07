@@ -16,7 +16,7 @@ import com.mygdx.game.World.GameManager;
 public class GameClient 
 {
 	private Client client;
-	private int timeout = 5000;
+	private int timeout = 10000;
 	String name;
 
 	public GameClient()
@@ -32,7 +32,7 @@ public class GameClient
 	{
 		try
 		{
-			client.connect(timeout, Network.host, Network.tcp);
+			client.connect(timeout, Network.host, Network.tcp, Network.udp);
 		}
 		catch(IOException e)
 		{
@@ -51,6 +51,14 @@ public class GameClient
 		client.sendTCP(login);
 	}
 	
+	public void vote()
+	{
+		Network.Vote vote = new Network.Vote();
+		
+		vote.voted = true;
+		client.sendTCP(vote);
+	}
+	
 	public void register(String username, String password)
 	{
 		Network.Register register = new Network.Register();
@@ -62,15 +70,27 @@ public class GameClient
 	}
 	
 	// Informs the server of any player movement
-	public void updateCharacter(byte id, Matrix4 transform, byte status)
+	public void updateCharacter(int id, String name, Matrix4 transform, byte status)
 	{
 		Network.UpdateCharacter update = new Network.UpdateCharacter();
 		
 		update.transform = transform;
 		update.id = id;
+		update.name = name;
 		update.status = status;
 		
-		client.sendTCP(update);
+		client.sendUDP(update);
+	}
+	
+	public void updateVehicle(Matrix4 chassis, int id, boolean hasDriver)
+	{
+		Network.UpdateVehicle update = new Network.UpdateVehicle();
+		
+		update.transform = chassis;
+		update.id = id;
+		update.hasDriver = hasDriver;
+		
+		client.sendUDP(update);
 	}
 	
 	private Listener makeListener()
@@ -101,7 +121,8 @@ public class GameClient
 						@Override
 						public void run()
 						{
-							PlayerManager.playerManager.updatePlayers(update.id, update.transform, update.status);
+							if(PlayerManager.playerManager != null)
+								PlayerManager.playerManager.updatePlayers(update.id, update.name, update.transform, update.status);
 						}
 					});
 				}
@@ -133,6 +154,30 @@ public class GameClient
 				else if(object instanceof Network.Registered)
 				{
 					MainMenu.menu.registered(((Network.Registered)object).registered);
+				}
+				else if(object instanceof Network.UpdateVehicle)
+				{
+					if(GameManager.inst != null && GameManager.inst.vehicleManager != null)
+						GameManager.inst.vehicleManager.updateTransform(((Network.UpdateVehicle)object).transform, ((Network.UpdateVehicle)object).id,
+								((Network.UpdateVehicle)object).hasDriver);
+				}
+				else if(object instanceof Network.Vote)
+				{
+					Gdx.app.postRunnable(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							if(GameManager.inst != null)
+								GameManager.inst.restart();
+						}
+					});
+				}
+				else if(object instanceof Network.VotesNeeded)
+				{
+					if(GameManager.inst != null)
+						GameManager.inst.updateVotes(((Network.VotesNeeded)object).votes);
+					System.out.println(((Network.VotesNeeded)object).votes);
 				}
 			}
 		};

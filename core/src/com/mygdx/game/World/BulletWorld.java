@@ -68,7 +68,8 @@ public class BulletWorld extends BaseWorld<BulletEntity> {
 		this(collisionConfiguration, dispatcher, broadphase, solver, world, new Vector3(0, -10, 0));
 	}
 
-	public BulletWorld (final Vector3 gravity) {
+	public BulletWorld (final Vector3 gravity) 
+	{
 		collisionConfiguration = new btDefaultCollisionConfiguration();
 		dispatcher = new btCollisionDispatcher(collisionConfiguration);
 		broadphase = new btDbvtBroadphase();
@@ -78,14 +79,17 @@ public class BulletWorld extends BaseWorld<BulletEntity> {
 		this.gravity = gravity;
 	}
 
-	public BulletWorld () {
+	public BulletWorld () 
+	{
 		this(new Vector3(0, -10, 0));
 	}
 
 	@Override
-	public void add (final BulletEntity entity) {
+	public void add (final BulletEntity entity) 
+	{
 		super.add(entity);
-		if (entity.body != null) {
+		if (entity.body != null) 
+		{
 			if (entity.body instanceof btRigidBody)
 				((btDiscreteDynamicsWorld)collisionWorld).addRigidBody((btRigidBody)entity.body);
 			else
@@ -96,8 +100,10 @@ public class BulletWorld extends BaseWorld<BulletEntity> {
 	}
 
 	@Override
-	public void update () {
-		if (performanceCounter != null) {
+	public void update () 
+	{
+		if (performanceCounter != null) 
+		{
 			performanceCounter.tick();
 			performanceCounter.start();
 		}
@@ -107,7 +113,8 @@ public class BulletWorld extends BaseWorld<BulletEntity> {
 	}
 
 	@Override
-	public void render (ModelBatch batch, Environment lights, Iterable<BulletEntity> entities) {
+	public void render (ModelBatch batch, Environment lights, Iterable<BulletEntity> entities) 
+	{
 		if (renderMeshes) super.render(batch, lights, entities);
 		if (debugDrawer != null && debugDrawer.getDebugMode() > 0) {
 			batch.flush();
@@ -118,10 +125,13 @@ public class BulletWorld extends BaseWorld<BulletEntity> {
 	}
 
 	@Override
-	public void dispose () {
-		for (int i = 0; i < entities.size; i++) {
+	public void dispose () 
+	{
+		for (int i = 0; i < entities.size; i++) 
+		{
 			btCollisionObject body = entities.get(i).body;
-			if (body != null) {
+			if (body != null) 
+			{
 				if (body instanceof btRigidBody)
 					((btDynamicsWorld)collisionWorld).removeRigidBody((btRigidBody)body);
 				else
@@ -138,13 +148,15 @@ public class BulletWorld extends BaseWorld<BulletEntity> {
 		if (collisionConfiguration != null) collisionConfiguration.dispose();
 	}
 
-	public void setDebugMode (final int mode) {
+	public void setDebugMode (final int mode) 
+	{
 		if (mode == btIDebugDraw.DebugDrawModes.DBG_NoDebug && debugDrawer == null) return;
 		if (debugDrawer == null) collisionWorld.setDebugDrawer(debugDrawer = new DebugDrawer());
 		debugDrawer.setDebugMode(mode);
 	}
 
-	public int getDebugMode () {
+	public int getDebugMode () 
+	{
 		return (debugDrawer == null) ? 0 : debugDrawer.getDebugMode();
 	}
 }

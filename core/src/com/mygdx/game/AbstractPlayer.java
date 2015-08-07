@@ -31,7 +31,7 @@ public abstract class AbstractPlayer
 	final static byte jumping = 6;
 	final static byte driving = 7;
 	
-	private byte ID;
+	private int ID;
 	private BulletEntity character;
 	private Matrix4 characterTransform = new Matrix4();
 	private Vector3 start = new Vector3();
@@ -50,7 +50,7 @@ public abstract class AbstractPlayer
 			Model cat = new Model(data, new TextureProvider.FileTextureProvider());
 		
 			// Create a visual representation of the character (note that we don't use the physics part of BulletEntity, we'll do that manually)
-			GameManager.inst.world.addConstructor("player", new BulletConstructor(cat, new btCapsuleShape(0.05f, 0.1f)));
+			GameManager.inst.world.addConstructor("player", new BulletConstructor(cat, new btSphereShape(0.5f)));
 		}
 		
 		character = GameManager.inst.world.add("player", start.x, start.y, start.z);
@@ -60,8 +60,8 @@ public abstract class AbstractPlayer
 		// Create the physics representation of the character
 		ghostObject = new btPairCachingGhostObject();
 		ghostObject.setWorldTransform(character.transform);
-		ghostShape = new btBoxShape(new Vector3(0.5f,0.5f,0.5f));
-		ghostShape = new btCapsuleShapeZ(0.5f, 4f);
+		//ghostShape = new btBoxShape(new Vector3(0.5f,0.5f,0.5f));
+		//ghostShape = new btCapsuleShapeX(0.5f, 4f);
 		ghostShape = new btSphereShape(0.5f);
 		ghostObject.setCollisionShape(ghostShape);
 		ghostObject.setCollisionFlags(btCollisionObject.CollisionFlags.CF_CHARACTER_OBJECT);
@@ -114,12 +114,12 @@ public abstract class AbstractPlayer
 	}
 	
 	
-	public void setID(byte id)
+	public void setID(int id)
 	{
 		ID = id;
 	}
 	
-	public byte getID()
+	public int getID()
 	{
 		return ID;
 	}

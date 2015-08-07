@@ -1,11 +1,14 @@
 package com.mygdx.game.World;
 
-import java.io.IOException;
-
 import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.graphics.GL30;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.FPSLogger;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
@@ -32,13 +35,13 @@ import com.mygdx.game.ChaseCamera;
 import com.mygdx.game.MyGdxGame;
 import com.mygdx.game.Player;
 import com.mygdx.game.PlayerManager;
+import com.mygdx.game.Sounds;
 import com.mygdx.game.Environment.SkyDome;
 import com.mygdx.game.Environment.TerrainManager;
-import com.mygdx.game.Vehicles.Vehicle;
+import com.mygdx.game.Vehicles.VehicleManager;
 import com.mygdx.game.kryonet.GameClient;
 import com.mygdx.game.kryonet.GameServer;
 import com.mygdx.game.kryonet.Network;
-import com.mygdx.game.kryonet.Network.UpdateCharacter;
 
 public class GameManager extends BulletTest implements Screen
 {
@@ -70,6 +73,7 @@ public class GameManager extends BulletTest implements Screen
 	public Matrix4 character = new Matrix4();
 	public SkyDome sky;
 	private TerrainManager terrainManager;
+	private FPSLogger fps;
 	
 	public final Vector3 tmp = new Vector3();
 
@@ -83,7 +87,7 @@ public class GameManager extends BulletTest implements Screen
 	private boolean android;
 	private Vector3 playerPosition = new Vector3();
 	
-	public Vehicle vehicle;
+	public VehicleManager vehicleManager;
 	private Player player;
 	
 	private MyGdxGame game;
@@ -92,8 +96,16 @@ public class GameManager extends BulletTest implements Screen
 	private GameClient client;
 	private GameServer server;
 	private PlayerManager pm;
-	private byte ID;
+	private int ID;
 	private Vector3 startPosition;
+	
+	private SpriteBatch spriteBatch;
+	private BitmapFont font;
+	private String clientName;
+	private Network.Character player1;
+	
+	private Sounds sounds;
+	private int numVotes;
 	
 	protected final static Vector3 tmpV1 = new Vector3(), tmpV2 = new Vector3();
 	
@@ -102,11 +114,17 @@ public class GameManager extends BulletTest implements Screen
 		
 	}
 	
-	public GameManager(MyGdxGame game, Network.Character player)
+	public GameManager(MyGdxGame game, Network.Character player, int id, GameClient client)
 	{
+		this.client = client;
 		this.game = game;
-		ID = player.id;
-		startPosition = player.transform;
+		ID = id;
+		player1 = player;
+		startPosition = player.transform.cpy();
+		clientName = player.name;
+		if(clientName.length() > 7)
+			clientName = clientName.substring(0, 6);
+		
 		create();
 	}
 
@@ -139,6 +157,10 @@ public class GameManager extends BulletTest implements Screen
 		init();
 		inst = this;
 		pm = new PlayerManager();
+		fps = new FPSLogger();
+		spriteBatch = new SpriteBatch();
+		font = new BitmapFont();
+		sounds = new Sounds();
 		
 		// Find out if we are playing on desktop or android
 		switch(Gdx.app.getType())
@@ -152,7 +174,7 @@ public class GameManager extends BulletTest implements Screen
 		}
 
 		environment = new Environment();
-		environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1.f));
+		environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.6f, 0.6f, 0.6f, 1.0f));
 		light = shadows ? new DirectionalShadowLight(1024, 1024, 20f, 20f, 1f, 300f) : new DirectionalLight();
 		light.set(0.8f, 0.8f, 0.8f, -0.5f, -1f, -0.5f);
 		environment.add(light);
@@ -165,51 +187,62 @@ public class GameManager extends BulletTest implements Screen
 		world = createWorld();
 		world.performanceCounter = performanceCounter;
 		
+		vehicleManager = new VehicleManager(4);
+		
 		final float width = Gdx.graphics.getWidth();
 		final float height = Gdx.graphics.getHeight();
 		if (width > height)
-			camera = new ChaseCamera(67f, 3f * width / height, 3f, android ? controller : null);
+			camera = new ChaseCamera(67f, width, height);//3f * width / height, 3f);
 		else
-			camera = new ChaseCamera(67f, 3f, 3f * height / width, android ? controller : null);
-		camera.near = 0.01f;
-		camera.far = 5000f;
+			camera = new ChaseCamera(67f, 3f, 3f * height / width);
+		camera.near = 1f;
+		camera.far = 2300f;
 		camera.update();
 
 		terrainManager = new TerrainManager(playerPosition, this);
 		sky = new SkyDome(this);
 		
-		startConnection();
-		
+		startPosition.x += 30f; 
+		startPosition.z += 50f;
 		player = new Player(startPosition);
 		player.setID(ID);
+		player.setName(clientName);
 	}
 	
-	public void startConnection()
+	public void updatePlayerTransform(Matrix4 transform, String name, int id, byte status)
 	{
-		network = new Network();
-		client = new GameClient();
+		client.updateCharacter(id, name, transform, status);
 	}
 	
-	public void updatePlayerTransform(Matrix4 transform, byte id, byte status)
+	public void updateVehicleTransform(Matrix4 chassis, int id, boolean hasDriver)
 	{
-		client.updateCharacter(id, transform, status);
+		client.updateVehicle(chassis, id, hasDriver);
 	}
 	
 	public void Spawn(Vector3 startPosition)
 	{
-		vehicle = new Vehicle(this, startPosition);
 		player = new Player(startPosition);
 		player.setID(ID);
 	}
 	
-	public void setID(byte id)
+	public void setID(int id)
 	{
 		ID = id;
+	}
+	
+	public int getID()
+	{
+		return ID;
 	}
 	
 	public Player getClientPlayer()
 	{
 		return player;
+	}
+	
+	public Sounds getSounds()
+	{
+		return sounds;
 	}
 
 	@Override
@@ -227,14 +260,19 @@ public class GameManager extends BulletTest implements Screen
 
 		shadowBatch.dispose();
 		shadowBatch = null;
+		
+		spriteBatch.dispose();
+		spriteBatch = null;
 
 		if (shadows)
 			((DirectionalShadowLight)light).dispose();
 		light = null;
 
 		super.dispose();
-		controller.dispose();
-		player.dispose();
+		if(controller != null)
+			controller.dispose();
+		if(player != null)
+			player.dispose();
 	}
 
 	@Override
@@ -247,14 +285,13 @@ public class GameManager extends BulletTest implements Screen
 	{
 		if (update) update();
 
-		beginRender(true);
-		
+		beginRender(true);		
 		renderWorld();
 
-		Gdx.gl.glDisable(GL30.GL_DEPTH_TEST);
+		Gdx.gl.glDisable(GL20.GL_DEPTH_TEST);
 		//if (debugMode != DebugDrawModes.DBG_NoDebug) 
 			world.setDebugMode(debugMode);
-		Gdx.gl.glEnable(GL30.GL_DEPTH_TEST);
+		Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
 		
 		// Only need to update controller if on android
 		if(controller != null)
@@ -270,17 +307,14 @@ public class GameManager extends BulletTest implements Screen
 	{
 		Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		Gdx.gl.glClearColor(0, 0, 0, 0);
-		Gdx.gl.glClear(GL30.GL_COLOR_BUFFER_BIT | GL30.GL_DEPTH_BUFFER_BIT);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
 		character.getTranslation(playerPosition);
 		terrainManager.setPosition(playerPosition);
 		terrainManager.update();
-		
-		if(vehicle != null)
-		{
-			vehicle.update();
-			
-		}
+
+		vehicleManager.updateVehicles();
+		//fps.log();
 		
 		player.update();
 		
@@ -309,6 +343,22 @@ public class GameManager extends BulletTest implements Screen
 		modelBatch.begin(camera);
 		world.render(modelBatch, environment);
 		modelBatch.end();
+		
+		listPlayers();
+		
+		if(Gdx.input.isKeyJustPressed(Keys.N))
+		{
+			camera = null;
+			camera = new ChaseCamera(67f, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+			camera.near = 1f;
+			camera.far = 2300f;
+			camera.transform.set(character);
+		}
+		
+		if(Gdx.input.isKeyJustPressed(Keys.T))
+		{
+			client.vote();
+		}
 	}
 
 	public void update () 
@@ -326,5 +376,98 @@ public class GameManager extends BulletTest implements Screen
 	public void hide() {
 		// TODO Auto-generated method stub
 		
+	}
+	
+	public void restart()
+	{
+		// Stop all sounds before restarting
+		sounds.stopSound(0);
+		sounds.stopSound(1);
+		sounds.stopSound(2);
+		
+		game.setScreen(new GameManager(game, player1, ID, client));
+		this.dispose();
+	}
+	
+	public GameClient getClient()
+	{
+		return client;
+	}
+	
+	public void updateVotes(int numVotes)
+	{
+		this.numVotes = numVotes;
+	}
+	
+	// Lists all current players, their place, and the distance they are at
+	private void listPlayers()
+	{
+		int place = 1;
+		boolean playerDrawn = false;
+		
+		spriteBatch.begin();
+		// Text is small on android, so scale it up
+		if(android)
+			font.getData().setScale(2,2);
+		font.setColor(Color.YELLOW);
+		font.draw(spriteBatch, "Player", 5 * font.getScaleX(), Gdx.graphics.getHeight() - 5 * font.getScaleY());
+		font.draw(spriteBatch, "Place", 60 * font.getScaleX(), Gdx.graphics.getHeight() - 5 * font.getScaleY());
+		font.draw(spriteBatch, "Distance Travelled", 100 * font.getScaleX(), Gdx.graphics.getHeight() - 5 * font.getScaleY());
+		font.setColor(Color.RED);
+		
+		pm.sortPlayers();
+		
+		// Print players to screen from highest distance to lowest
+		if(pm.getPlayers().size > 0)
+		{
+			for(int i = pm.getPlayers().size - 1; i >= 0; i--)
+			{
+				if(playerPosition.x > pm.getPlayers().get(i).getPosition().x && !playerDrawn)
+				{
+					playerDrawn = true;
+					font.setColor(Color.GREEN);
+					font.draw(spriteBatch, clientName, 5 * font.getScaleX(), Gdx.graphics.getHeight() - 25 * place * font.getScaleY());
+					font.draw(spriteBatch, ""+place, 60 * font.getScaleX(), Gdx.graphics.getHeight() - 25 * place * font.getScaleY());
+					font.draw(spriteBatch, ""+(int)playerPosition.x, 100 * font.getScaleX(), Gdx.graphics.getHeight() - 25 * place * font.getScaleY());
+					if(pm.getPlayers().get(i).getName() != null)
+					{
+						if(pm.getPlayers().get(i).getName().length() > 7)
+							pm.getPlayers().get(i).setName(pm.getPlayers().get(i).getName().substring(0, 6));
+						font.setColor(Color.RED);
+						font.draw(spriteBatch, pm.getPlayers().get(i).getName(), 5 * font.getScaleX(), Gdx.graphics.getHeight() - 25 * (place + 1) * font.getScaleY());
+						font.draw(spriteBatch, ""+(place + 1), 60 * font.getScaleX(), Gdx.graphics.getHeight() - 25 * (place + 1) * font.getScaleY());
+						font.draw(spriteBatch, ""+(int)pm.getPlayers().get(i).getPosition().x, 100 * font.getScaleX(), Gdx.graphics.getHeight() - 25 * (place + 1) * font.getScaleY());
+					}
+					
+					place++;
+				}
+				else
+				{
+					if(pm.getPlayers().get(i).getName() != null)
+					{
+						if(pm.getPlayers().get(i).getName().length() > 7)
+							pm.getPlayers().get(i).setName(pm.getPlayers().get(i).getName().substring(0, 6));
+						font.draw(spriteBatch, pm.getPlayers().get(i).getName(), 5 * font.getScaleX(), Gdx.graphics.getHeight() - 25 * place * font.getScaleY());
+						font.draw(spriteBatch, ""+place, 60 * font.getScaleX(), Gdx.graphics.getHeight() - 25 * place * font.getScaleY());
+						font.draw(spriteBatch, ""+(int)pm.getPlayers().get(i).getPosition().x, 100 * font.getScaleX(), Gdx.graphics.getHeight() - 25 * place * font.getScaleY());
+					}
+				}
+				
+				place++;
+			}
+		}
+		
+		if(!playerDrawn)
+		{
+			font.setColor(Color.GREEN);
+			font.draw(spriteBatch, clientName, 5 * font.getScaleX(), Gdx.graphics.getHeight() - 25 * place * font.getScaleY());
+			font.draw(spriteBatch, ""+place, 60 * font.getScaleX(), Gdx.graphics.getHeight() - 25 * place * font.getScaleY());
+			font.draw(spriteBatch, ""+(int)playerPosition.x, 100 * font.getScaleX(), Gdx.graphics.getHeight() - 25 * place * font.getScaleY());
+		}
+		
+		font.setColor(Color.YELLOW);
+		font.draw(spriteBatch, "Votes needed to restart: "+(pm.getPlayers().size + 1 - numVotes), Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() - 5 * font.getScaleY());
+		
+		spriteBatch.end();
 	}
 }

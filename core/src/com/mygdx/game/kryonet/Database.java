@@ -8,6 +8,7 @@ import java.sql.Statement;
 
 import com.badlogic.gdx.math.Vector3;
 
+// The SQL database stores usernames/passwords and their character's location in the world
 public class Database 
 {
 	private String connectionUrl = "jdbc:sqlserver://localhost:1433;" +
@@ -24,18 +25,15 @@ public class Database
 	
 	public Database()
 	{
+		// Connect to the database
 		try{
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 			sqlConnection = DriverManager.getConnection(connectionUrl);
 			
+			// There is only one table (users)...contains names and passwords
 			String SQL = "SELECT * FROM Users";
 			stmt = sqlConnection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
-			rs = stmt.executeQuery(SQL);
-			
-			while(rs.next()){
-				System.out.println(rs.getString(1) + " " + rs.getString(2));
-			}
-			
+			rs = stmt.executeQuery(SQL);	
 		}
 		catch(Exception e)
 		{
@@ -60,7 +58,7 @@ public class Database
 			rs.updateString(users, name);
 			rs.updateString(passwords, password);
 			rs.updateString(x, "0");
-			rs.updateString(y, "30");
+			rs.updateString(y, "20");
 			rs.updateString(z, "0");
 			rs.insertRow();
 		} 

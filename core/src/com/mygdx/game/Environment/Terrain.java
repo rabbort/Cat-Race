@@ -1,5 +1,7 @@
 package com.mygdx.game.Environment;
 
+import java.util.Random;
+
 import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.graphics.Mesh;
 import com.badlogic.gdx.graphics.g3d.Material;
@@ -30,32 +32,46 @@ public class Terrain implements Runnable
 	private Mesh mesh;
 	private Model terrainModel;
 	private Material material;
-	private String location;
 	private Vector3 center = new Vector3();
 	private GameManager base;
 	private static double[][] simplex;
-	private static int terrainScale = 4;
+	private static int terrainScale = 5;
 	private BulletEntity terrain;
-	
+	private boolean useThread;
+	private boolean starting;
 	private Thread terrainThread;
+	private int terrainLength = 128;
+	private int terrainWidth = 128;
+	
+	private int[] startPoints = new int[3];
 
-	public Terrain(GameManager base, String location, Vector3 center)
+	public Terrain(GameManager base, Vector3 center, boolean useThread, boolean startingTerrain, int[] startPoints)
 	{
 		this.base = base;
-		this.location = location;
 		this.center = center;
+		this.useThread = useThread;
+		this.startPoints = startPoints.clone();
+		this.starting = startingTerrain;
 		
-		terrainThread = new Thread(this, "terrain"+location);
-		terrainThread.start();
+		if(useThread)
+		{
+			terrainThread = new Thread(this, "terrain"+center);
+			terrainThread.start();
+		}
+		else
+		{
+			create();
+		}
 	}
 	
+	// This seems to mess things up. Look back at this later on
 	@Override
 	public void run() 
 	{
 		// position, normal, color, texture
 		int vertexSize = 3 + 3 + 1 + 2; 
 		// Create the new chunk on this thread
-		chunk = new TerrainChunk(128, 128, vertexSize, this.location, this.center);
+		chunk = new TerrainChunk(terrainWidth, terrainLength, vertexSize, this.center, starting, startPoints);
 		// Pass the results to opengl
 		Gdx.app.postRunnable(new Runnable() 
 		{
@@ -67,8 +83,19 @@ public class Terrain implements Runnable
 		});
 	}
 	
+	public int[] getStart()
+	{
+		return chunk.getStartPoints();
+	}
+	
 	public void create() 
 	{  
+		if(!useThread)
+		{
+			int vertexSize = 3 + 3 + 1 + 2; 
+			chunk = new TerrainChunk(terrainWidth, terrainLength, vertexSize, this.center, starting, startPoints);
+		}
+		
 	    mesh = new Mesh(true, chunk.vertices.length / 3, chunk.indices.length,
 	            new VertexAttribute(Usage.Position, 3, ShaderProgram.POSITION_ATTRIBUTE),
 	            new VertexAttribute(Usage.Normal, 3, ShaderProgram.NORMAL_ATTRIBUTE),
@@ -76,13 +103,13 @@ public class Terrain implements Runnable
 	            new VertexAttribute(Usage.TextureCoordinates, 2, ShaderProgram.TEXCOORD_ATTRIBUTE));
 	    mesh.setVertices(chunk.vertices);
 	    mesh.setIndices(chunk.indices);
-	    
-	    material = new Material(ColorAttribute.createSpecular(1,1,1,1), FloatAttribute.createShininess(8f));
+
+	    material = new Material(ColorAttribute.createSpecular(1,1,1,1), FloatAttribute.createShininess(2f));
 	    
 	    terrainModel = new Model();
 	    
 	    MeshPart meshPart = new MeshPart();
-	    meshPart.id = "terrainChunk"+this.location;
+	    meshPart.id = "terrainChunk"+this.center;
 	    meshPart.indexOffset = 0;
 	    meshPart.numVertices = mesh.getNumIndices();
 	    meshPart.primitiveType = GL30.GL_TRIANGLES;
@@ -96,7 +123,7 @@ public class Terrain implements Runnable
 	    nodePart.meshPart = meshPart;
 	    
 	    Node node = new Node();
-	    node.id = "terrainNode"+this.location;
+	    node.id = "terrainNode"+this.center;
 	    node.parts.add(nodePart);
 	    
 	    terrainModel.meshes.add(mesh);
@@ -108,34 +135,19 @@ public class Terrain implements Runnable
 	    this.center.x = (int)this.center.x;
 	    this.center.z = (int)this.center.z;
 	    
-	    this.base.world.addConstructor("terrain"+this.location, new BulletConstructor(terrainModel, 0f, terrainShape));
+	    this.base.world.addConstructor("terrain"+this.center, new BulletConstructor(terrainModel, 0f, terrainShape));
 	    this.base.disposables.add(terrainModel);
 	    this.base.disposables.add(vertArray);
 	    this.base.disposables.add(terrainShape);
-	    
-	    switch(this.location)
-	    {
-	    	case "NW": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 128 * terrainScale, 0, this.center.z + 128 * terrainScale);
-						break;
-	    	case "N": 	terrain = this.base.world.add("terrain"+this.location, this.center.x, 0, this.center.z + 128 * terrainScale);
-						break;
-	    	case "NE": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 128 * terrainScale, 0, this.center.z + 128 * terrainScale);
-	    				break;
-	    	case "W": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 128 * terrainScale, 0, this.center.z);
-						break;
-	    	case "C": 	terrain = this.base.world.add("terrain"+this.location, this.center.x, 0, this.center.z);
-	    				break;
-	    	case "E": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 128 * terrainScale, 0, this.center.z);
-						break;
-	    	case "SW": 	terrain = this.base.world.add("terrain"+this.location, this.center.x - 128 * terrainScale, 0, this.center.z - 128 * terrainScale);
-						break;
-	    	case "S": 	terrain = this.base.world.add("terrain"+this.location, this.center.x, 0, this.center.z - 128 * terrainScale);
-						break;
-	    	case "SE": 	terrain = this.base.world.add("terrain"+this.location, this.center.x + 128 * terrainScale, 0, this.center.z - 128 * terrainScale);
-						break;
-	    }
+
+	    terrain = this.base.world.add("terrain"+this.center, this.center.x, 20, 0);
 
 	    this.base.disposables.add(terrain);
+	}
+	
+	public BulletEntity getTerrain()
+	{
+		return terrain;
 	}
 	
 	final static class TerrainChunk 
@@ -148,12 +160,17 @@ public class Terrain implements Runnable
 	
 	    public final int vertexSize;
 	    private final int positionSize = 3;
-	    private final String location;
 	    private final Vector3 center;
+	    private boolean startingTerrain;
+	    private Random curves;
+	    private int[] startPoints = new int[3];
 	
-	    public TerrainChunk(int width, int height, int vertexSize, String location, Vector3 center) 
+	    public TerrainChunk(int width, int height, int vertexSize, Vector3 center, boolean startingTerrain, int[] startPoints) 
 	    {
-	
+	    	curves = new Random((long)(center.x + center.y + center.z));
+	    	this.startingTerrain = startingTerrain;
+	    	this.startPoints = startPoints;
+	    	
 	        if ((width + 1) * (height + 1) > Short.MAX_VALUE) 
 	        {
 	            throw new IllegalArgumentException(            
@@ -166,7 +183,6 @@ public class Terrain implements Runnable
 	        this.vertices = new float[heightMap.length * vertexSize];
 	        this.indices = new short[width * height * 6];
 	        this.vertexSize = vertexSize;
-	        this.location = location;
 	        this.center = center;
 	
 	        buildHeightmap();
@@ -176,6 +192,11 @@ public class Terrain implements Runnable
 	
 	        calcNormals(indices, vertices);
 	    }
+	    
+	    public int[] getStartPoints()
+	    {
+	    	return this.startPoints;
+	    }
 
 	    public void buildHeightmap() 
 	    {
@@ -184,37 +205,9 @@ public class Terrain implements Runnable
 	        int yOffset = 0;
 	        
 	        simplex = new double[this.width + 1][this.height + 1];
-	        
-	        switch(this.location)
-	        {
-	        	case "NW": 	xOffset = ((int)this.center.x / terrainScale) - 64 - (128 * 1);
-							yOffset = ((int)this.center.z / terrainScale) + 64 + (128 * 1);
-							break;
-	        	case "N": 	xOffset = ((int)this.center.x / terrainScale) - 64 - (128 * 0);
-							yOffset = ((int)this.center.z / terrainScale) + 64 + (128 * 1);
-							break;
-	        	case "NE": 	xOffset = ((int)this.center.x / terrainScale) + 64 + (128 * 0);
-							yOffset = ((int)this.center.z / terrainScale) + 64 + (128 * 1);
-							break;
-	        	case "W": 	xOffset = ((int)this.center.x / terrainScale) - 64 - (128 * 1);
-							yOffset = ((int)this.center.z / terrainScale) + 64 + (128 * 0);
-							break;
-	        	case "C": 	xOffset = ((int)this.center.x / terrainScale) - 64 - (128 * 0);
-							yOffset = ((int)this.center.z / terrainScale) + 64 + (128 * 0);
-							break;
-	        	case "E": 	xOffset = ((int)this.center.x / terrainScale) + 64 + (128 * 0);
-							yOffset = ((int)this.center.z / terrainScale) + 64 + (128 * 0);
-							break;
-	        	case "SW": 	xOffset = ((int)this.center.x / terrainScale) - 64 - (128 * 1);
-							yOffset = ((int)this.center.z / terrainScale) - 64 - (128 * 0);
-							break;
-	        	case "S": 	xOffset = ((int)this.center.x / terrainScale) - 64 - (128 * 0);
-							yOffset = ((int)this.center.z / terrainScale) - 64 - (128 * 0);
-							break;
-	        	case "SE": 	xOffset = ((int)this.center.x / terrainScale) + 64 + (128 * 0);
-							yOffset = ((int)this.center.z / terrainScale) - 64 - (128 * 0);
-							break;
-	        }
+
+	        xOffset = ((int)this.center.x / terrainScale) - 64;
+			yOffset = ((int)this.center.z / terrainScale) + 64;
 	        
 	        simplex = NoiseGenerator.get2DNoise(xOffset, yOffset);
 	
@@ -234,8 +227,12 @@ public class Terrain implements Runnable
 	
 	        int idx = 0;
 	        int hIdx = 0;
-	        int strength = 300; // multiplier for height map
-	
+	        int strength = 100; // multiplier for height map
+	        int turn1 = 0;
+	        int turn2 = 0;
+	        int turn3 = 0;
+	        int roadWidth = 8;
+	        
 	        float scale = terrainScale;
 	
 	        for (int z = 0; z < heightPitch; z++) 
@@ -244,7 +241,28 @@ public class Terrain implements Runnable
 	            {
 	                // POSITION
 	                vertices[idx++] = scale * z;
-	                vertices[idx++] = heightMap[hIdx++] * strength - strength;
+
+	                if(x == 0 || x == widthPitch - 1 || (startingTerrain && z == 0))
+	                {
+	                	vertices[idx++] = 100;
+	                	hIdx++;
+	                }
+	                else if(startingTerrain && z < 30)
+	                {
+	                	vertices[idx++] = 0;
+	                	hIdx++;
+	                }
+	                else if(x == 1 || x == widthPitch - 2 || 
+	                		(x <= startPoints[0] + turn1 + roadWidth && x >= startPoints[0] + turn1 - roadWidth) ||
+	                		(x <= startPoints[1] + turn2 + roadWidth && x >= startPoints[1] + turn2 - roadWidth))// ||
+	                		//(x <= startPoints[2] + turn3 + roadWidth && x >= startPoints[2] + turn3 - roadWidth))
+	                {
+	                	vertices[idx++] = 0;
+	                	hIdx++;
+	                }
+	                else
+	                	vertices[idx++] = heightMap[hIdx++] * strength - strength;
+
 	                vertices[idx++] = scale * x;
 	
 	                // NORMAL
@@ -254,8 +272,13 @@ public class Terrain implements Runnable
 	                int mountainBorder = MathUtils.random(10, 30);
 	                int dirtBorder = MathUtils.random(-5, mountainBorder);
 	                int white = MathUtils.random(240, 255);
+	                
 	                // COLOR
-	                if(vertices[idx - 5] > mountainCapBorder)
+	                if(vertices[idx - 5] == 0)
+	                	vertices[idx++] = Color.toFloatBits(0, 0, 0, 1);
+	                else if(vertices[idx - 5] == 100 || x <= 1 || x >= widthPitch - 2 || (startingTerrain && z == 1))
+	                	vertices[idx++] = Color.toFloatBits(255, 255, 255, 1);
+	                else if(vertices[idx - 5] > mountainCapBorder)
 	                	vertices[idx++] = Color.toFloatBits(white, white, white, 1);
 	                else if(vertices[idx - 5] > mountainBorder)
 	                {
@@ -263,7 +286,7 @@ public class Terrain implements Runnable
 	                	vertices[idx++] = Color.toFloatBits(grey, grey, grey, 1);
 	                }
 	                else if(vertices[idx - 5] > dirtBorder)
-	                	vertices[idx++] = Color.toFloatBits(MathUtils.random(100, 120), MathUtils.random(60, 80), 
+	                	vertices[idx++] = Color.toFloatBits(MathUtils.random(100, 120), MathUtils.random(60, 80),
 	                			MathUtils.random(20, 30), 1);
 	                else
 	                	vertices[idx++] = Color.toFloatBits(0, MathUtils.random(50, 90), 0, 1);
@@ -272,8 +295,38 @@ public class Terrain implements Runnable
 	                vertices[idx++] = (x / (float) width * scale);
 	                vertices[idx++] = (z / (float) height * scale);
 	            }
+
+	            if(z < heightPitch - 1)
+	            {
+		            if(startPoints[0] + turn1 + roadWidth > 128)
+		            	turn1 -= curves.nextInt(3);
+		            else if(startPoints[0] + turn1 - roadWidth < 0)
+		            	turn1 += curves.nextInt(3);
+		            else
+		            	turn1 += curves.nextInt(5) - 2;
+		            
+		            if(startPoints[1] + turn2 + roadWidth > 128)
+		            	turn2 -= curves.nextInt(5);
+		            else if(startPoints[1] + turn2 - roadWidth < 0)
+		            	turn2 += curves.nextInt(5);
+		            else
+		            	turn2 += curves.nextInt(5) - 2;
+		            
+		            if(startPoints[2] + turn3 + roadWidth > 128)
+		            	turn3 -= curves.nextInt(3);
+		            else if(startPoints[2] + turn3 - roadWidth < 0)
+		            	turn3 += curves.nextInt(3);
+		            else
+		            	turn3 += curves.nextInt(5) - 2;	
+	            }
 	        }
+	        
+	        // Store the ending location for the next terrain
+	        startPoints[0] += turn1;
+	        startPoints[1] += turn2;
+	        startPoints[2] += turn3;
 	    }
+	    
 
 	    private void buildIndices() 
 	    {

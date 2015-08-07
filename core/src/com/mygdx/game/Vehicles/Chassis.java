@@ -14,37 +14,64 @@ import com.mygdx.game.World.BulletConstructor;
 import com.mygdx.game.World.BulletEntity;
 import com.mygdx.game.World.GameManager;
 
-public class Chassis 
+public abstract class Chassis 
 {
-	private GameManager base;
 	private BulletEntity chassis;
 	private Model chassisModel;
 	private ModelData chassisData;
 	private ModelLoader modelLoader;
 	private Vector3 chassisHalfExtents;
+	private float mass;
 	
-	public Chassis(GameManager base, Vector3 location)
+	public Chassis(Vector3 location, String type)
 	{
-		this.base = base;
+		mass = setMass(type);
 		
-		// If there is no wheel constructor, set it up
-		if(this.base.world.getConstructor("chassis") == null)
+		// If there is no chassis constructor, set it up
+		if(GameManager.inst.world.getConstructor("chassis"+type) == null)
 		{
 			modelLoader = new G3dModelLoader(new JsonReader());
-			chassisData = modelLoader.loadModelData(Gdx.files.internal("data/vehicles/chassis/chassis.g3dj"));
+			chassisData = modelLoader.loadModelData(Gdx.files.internal("data/vehicles/chassis/"+type+".g3dj"));
 			chassisModel = new Model(chassisData, new TextureProvider.FileTextureProvider());
 			chassisHalfExtents = chassisModel.calculateBoundingBox(new BoundingBox()).getDimensions(new Vector3()).scl(0.5f);
+			if(type == "bigtruck")
+			{
+				chassisHalfExtents.y = 1.0f;
+				chassisHalfExtents.z = 9.0f;
+			}
+			else
+			{
+				chassisHalfExtents.y = 1.0f;
+				chassisHalfExtents.z -= 0.6f;
+			}
+			GameManager.inst.world.addConstructor("chassis"+type, new BulletConstructor(chassisModel, mass, new btBoxShape(chassisHalfExtents)));
+			GameManager.inst.disposables.add(chassisModel);
 			
-			this.base.world.addConstructor("chassis", new BulletConstructor(chassisModel, 1000f, new btBoxShape(chassisHalfExtents)));
-			this.base.disposables.add(chassisModel);
-			
-			chassis = this.base.world.add("chassis", location.x, location.y, location.z);
+			chassis = GameManager.inst.world.add("chassis"+type, location.x, location.y, location.z);
 		}
 		else
 		{
-			chassis = this.base.world.add("chassis", location.x, location.y, location.z);
+			chassis = GameManager.inst.world.add("chassis"+type, location.x, location.y, location.z);
 			chassisHalfExtents = chassis.modelInstance.model.calculateBoundingBox(new BoundingBox()).getDimensions(new Vector3()).scl(0.5f);
+			chassisHalfExtents.y = 1;
+			chassisHalfExtents.z -= 0.6f;
 		}
+	}
+	
+	private float setMass(String type)
+	{
+		if(type == "catherham")
+			return 300f;
+		else if(type == "interceptor")
+			return 800f;
+		else if(type == "tropfenwagen")
+			return 300f;
+		else if(type == "truck")
+			return 1500f;
+		else if(type == "bigtruck")
+			return 2200f;
+		
+		return 0f;
 	}
 	
 	public BulletEntity getChassis()
