@@ -3,6 +3,7 @@
 Cat race is a 3D cross-platform (desktop and Android) multiplayer racing game. Players start off a small distance from the vehicles, and must run to the car they want to drive. The terrain and roads are generated as the players go farther away from the starting point, so the race could potentially go on forever. 
 
 - [Current Features](#current-features)
+- [Link to source files](https://github.com/rabbort/Cat-Race/tree/master/core/src/com/mygdx/game)
 
 ##Current Features
 
